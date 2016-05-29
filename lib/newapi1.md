@@ -219,3 +219,32 @@ dom.window.location.href === "https://example.org/";
 ```
 
 This will impact all APIs that return the current document URL, such as `window.location`, `document.URL`, and `document.documentURI`, as well as resolution of relative URLs within the document, and the same-origin checks and referrer used in fetching external resources.
+
+## Future New API Work
+
+The New API is definitely not considered finished. In addition to responding to feedback based on your experience, we plan on adding the following functionality:
+
+- A new custom resource loader loader infrastructure and the ability to enable external resource loads. Tenative plan:
+
+  ```js
+  const dom = jsdom(``, {
+    resources: {
+      allowed: ["script#foo", "iframe", `link[rel="stylesheet"]`] // selector-based filtering
+      fetch({ url, cookie, referrer, defaultFetch }) {
+        // return a promise
+      }
+    }
+  });
+  ```
+- Promise-returning convenience methods, `jsdom.fromFile(filename, options)` and `jsdom.fromURL(url, options)` which will do the appropriate file-reading and fetching for you.
+  - `jsdom.fromURL()` will likely not support much customization (such as the current `headers` option). Instead, you'll be urged to make your own requests and use `jsdom()`.
+- Document lifecycle hooks. Tentative plan:
+  - A `beforeParse` option to parallel the current `created` hook.
+  - A `dom.loaded` promise that is fulfilled alongside the window's `"load"` event?
+- Fetching configuration, for parity with the current `pool`, `agentOptions`, `strictSSL`, and `proxy` options.
+- Miscellaneous options, such as `userAgent` and `concurrentNodeIterators`.
+- Speculative additional API ideas:
+  - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``jsdom(`<template>${html}</template>`, options).window.document.body.firstChild.content``.)
+  - `jsdom.jQuery(html, options)` which gives you back a `$` function for operating on the resulting DOM, similar to Cheerio.
+
+We're also wondering whether we should consolidate `reconfigureWindow` and `changeURL` into a single `reconfigure({ windowTop, url })` API, which might be more future-proof for further additions.
