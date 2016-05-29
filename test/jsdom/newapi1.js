@@ -316,8 +316,49 @@ describe("newapi1", () => {
       });
     });
 
-    describe.skip("changeURL", () => {
+    describe("changeURL", () => {
+      it("should successfully change the URL", () => {
+        const dom = jsdom(``, { url: "http://example.com/" });
+        const window = dom.window;
 
+        assert.strictEqual(window.document.URL, "http://example.com/");
+
+        function testPass(urlString, expected = urlString) {
+          dom.changeURL(urlString);
+
+          assert.strictEqual(window.location.href, expected);
+          assert.strictEqual(window.document.URL, expected);
+          assert.strictEqual(window.document.documentURI, expected);
+        }
+
+        testPass("http://localhost", "http://localhost/");
+        testPass("http://www.localhost", "http://www.localhost/");
+        testPass("http://www.localhost.com", "http://www.localhost.com/");
+        testPass("https://localhost/");
+        testPass("file://path/to/my/location/");
+        testPass("http://localhost.subdomain.subdomain/");
+        testPass("http://localhost:3000/");
+        testPass("http://localhost/");
+      });
+
+      it("should throw and not impact the URL when trying to change to an unparseable URL", () => {
+        const dom = jsdom(``, { url: "http://example.com/" });
+        const window = dom.window;
+
+        assert.strictEqual(window.document.URL, "http://example.com/");
+
+        function testFail(urlString) {
+          assert.throws(() => dom.changeURL(urlString), TypeError);
+
+          assert.strictEqual(window.location.href, "http://example.com/");
+          assert.strictEqual(window.document.URL, "http://example.com/");
+          assert.strictEqual(window.document.documentURI, "http://example.com/");
+        }
+
+        testFail("fail");
+        testFail("/fail");
+        testFail("fail.com");
+      });
     });
   });
 });
