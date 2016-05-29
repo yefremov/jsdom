@@ -92,7 +92,15 @@ virtualConsole.sendTo(console, { omitJsdomErrors: true });
 
 ### Cookie Jars
 
-## JSDOM Object API
+Like web browseres, jsdom has the concept of a cookie jar, storing HTTP cookies. Cookies that are not marked HTTP only and have a URL on the same domain  are accessible to the document via the `document.cookie` API, and all cookies in the cookie jar will impact the fetching of external resources.
+
+By default, the `jsdom` function will return a `JSDOM` instance with a cookie jar with no cookies. To create your own cookie jar and pass it to jsdom, you can override this default by doing
+
+```js
+const cookieJar = new jsdom.CookieJar();
+
+
+## `JSDOM` Object API
 
 ### Retrieving jsdom properties
 
