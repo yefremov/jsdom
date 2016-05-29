@@ -44,7 +44,7 @@ const dom = jsdom(``, {
 });
 ```
 
-- `url` sets the value returned by `document.URL` and `document.documentURI`, but it also affects things like resolution of relative URLs within the document, and same-origin checks used in fetching external resources. It defaults to `"about:blank"`.
+- `url` sets the value returned by `window.location`, `document.URL`, and `document.documentURI`, but it also affects things like resolution of relative URLs within the document, and the same-origin checks and referrer used in fetching external resources. It defaults to `"about:blank"`.
 - `referrer` just affects the value read from `document.referrer`. It defaults to `"about:blank"`.
 - `contentType` just affects the value read from `document.contentType`. By default it will be `"text/html"`, unless you override the parsing mode to be XML (see below), in which case it will be `"application/xml"`.
 - `parsingMode` can be either `"html"`, the default, or `"xml"`, indicating to parse the document as XML.
@@ -72,6 +72,8 @@ virtualConsole.on("dir", () => { ... });
 // ... etc. See https://console.spec.whatwg.org/#logging
 ```
 
+(Note that it is probably best to set up these event listeners *before* calling `jsdom()`, since errors or console-invoking script might happen during parsing.)
+
 If you simply want to redirect the virtual console output to another console, like the default Node.js one, you can do
 
 ```js
@@ -92,17 +94,24 @@ virtualConsole.sendTo(console, { omitJsdomErrors: true });
 
 ### Cookie Jars
 
-Like web browseres, jsdom has the concept of a cookie jar, storing HTTP cookies. Cookies that are not marked HTTP only and have a URL on the same domain  are accessible to the document via the `document.cookie` API, and all cookies in the cookie jar will impact the fetching of external resources.
+Like web browsers, jsdom has the concept of a cookie jar, storing HTTP cookies. Cookies that have a URL on the same domain and are not marked HTTP-only are accessible to the document via the `document.cookie` API, and all cookies in the cookie jar will impact the fetching of external resources.
 
 By default, the `jsdom` function will return a `JSDOM` instance with a cookie jar with no cookies. To create your own cookie jar and pass it to jsdom, you can override this default by doing
 
 ```js
-const cookieJar = new jsdom.CookieJar();
+const cookieJar = new jsdom.CookieJar(store, options);
+const dom = jsdom(``, { cookieJar });
+```
 
+This is mostly useful if you want to share the same cookie jar among multiple jsdoms. Note that passing in the cookie jar like this will ensure any manipulation of cookies that happens during parsing (due to script execution) is captured.
+
+Cookie jars are provided by the [tough-cookie](https://www.npmjs.com/package/tough-cookie) package. The `jsdom.CookieJar` constructor is a subclass of the tough-cookie cookie jar which by default sets the `looseMode: true` option, since that [matches better how browsers behave](https://www.npmjs.com/package/tough-cookie). If you want to use tough-cookie's utilities and classes yourself, you can use the `jsdom.toughCookie` export to get access to the tough-cookie module instance packaged with jsdom.
 
 ## `JSDOM` Object API
 
-### Retrieving jsdom properties
+Once you have called the `jsdom()` function, you'll get back a `JSDOM` object with the following capabilities.
+
+### Properties
 
 The property `window` retrieves the `Window` object that you created.
 
@@ -110,9 +119,20 @@ The properties `virtualConsole`, `cookieJar`, and `parsingMode` reflect the opti
 
 ### Serializing the document with `serialize()`
 
+The `serialize()` method will return the [HTML serialization](https://html.spec.whatwg.org/#html-fragment-serialisation-algorithm) of the document, including the doctype:
+
+```js
+const dom = jsdom(`<!DOCTYPE html>hello`);
+
+dom.serialize() === "<!DOCTYPE html><html><head></head><body>hello</body></html>";
+
+// Contrast with:
+dom.window.document.documentElement.outerHTML === "<html><head></head><body>hello</body></html>";
+```
+
 ### Getting the source location of a node with `nodeLocation(node)`
 
-To find where a DOM node is within the source document, each `JSDOM` instance provides a `nodeLocation` method that returns the [parse5 location info](https://www.npmjs.com/package/parse5#options-locationinfo) for the node:
+The `nodeLocation` method will find where a DOM node is within the source document, returning the [parse5 location info](https://www.npmjs.com/package/parse5#options-locationinfo) for the node:
 
 ```js
 const dom = jsdom(`<p>Hello
@@ -131,6 +151,30 @@ console.log(dom.nodeLocation(textNode)); // { start: 3, end: 13 }
 console.log(dom.nodeLocation(imgEl));    // { start: 13, end: 32 }
 ```
 
-#### Reconfiguring window properties with `reconfigureWindow(props)`
+### Reconfiguring window properties with `reconfigureWindow(props)`
+
+The `top` property on `window` is marked `[Unforgeable]` in the spec, meaning it is a non-configurable own property and thus cannot be overridden or shadowed by normal code running inside the jsdom, even using `Object.defineProperty`. However, if you're acting from outside the window, e.g. in some test framework that creates jsdoms, you can override it using the special `reconfigureWindow()` method:
+
+```js
+const dom = jsdom();
+
+dom.window.top === dom.window;
+dom.reconfigureWindow({ top: myFakeTopForTesting });
+dom.window.top === myFakeTopForTesting;
+```
+
+In the future we may expand `reconfigureWindow` to allow overriding other `[Unforgeable]` properties. Let us know if you need this capability.
 
 #### Changing the document URL with `changeURL(url)`
+
+At present jsdom does not handle navigation (such as setting `window.location.href === "https://example.com/"`); doing so will cause the virtual console to emit a `"jsdomError"` explaining that this feature is not implemented, and nothing will change: there will be no new `Window` or `Document` object. However, if you'd like to change the URL of an existing jsdom (such as for testing purposes), you can use the `changeURL()` method:
+
+```js
+const dom = jsdom(``, { url: "https://example.com/" });
+
+dom.window.location.href === "https://example.com/";
+dom.changeURL("https://example.org/");
+dom.window.location.href === "https://example.org/";
+```
+
+This will impact all APIs that return the current document URL, such as `window.location`, `document.URL`, and `document.documentURI`, as well as resolution of relative URLs within the document, and the same-origin checks and referrer used in fetching external resources.
