@@ -67,10 +67,11 @@ describe("newapi1", () => {
 
     describe("url", () => {
       it("should allow customizing document URL via the url option", () => {
-        const document = jsdom(``, { url: "http://example.com/" }).window.document;
+        const window = jsdom(``, { url: "http://example.com/" }).window;
 
-        assert.strictEqual(document.URL, "http://example.com/");
-        assert.strictEqual(document.documentURI, "http://example.com/");
+        assert.strictEqual(window.location.href, "http://example.com/");
+        assert.strictEqual(window.document.URL, "http://example.com/");
+        assert.strictEqual(window.document.documentURI, "http://example.com/");
       });
 
       it("should throw an error when passing an invalid absolute URL for url", () => {
@@ -78,17 +79,19 @@ describe("newapi1", () => {
       });
 
       it("should canonicalize document URLs", () => {
-        const document = jsdom(``, { url: "http:example.com" }).window.document;
+        const window = jsdom(``, { url: "http:example.com" }).window;
 
-        assert.strictEqual(document.URL, "http://example.com/");
-        assert.strictEqual(document.documentURI, "http://example.com/");
+        assert.strictEqual(window.location.href, "http://example.com/");
+        assert.strictEqual(window.document.URL, "http://example.com/");
+        assert.strictEqual(window.document.documentURI, "http://example.com/");
       });
 
       it("should have a default document URL of about:blank", () => {
-        const document = jsdom().window.document;
+        const window = jsdom().window;
 
-        assert.strictEqual(document.URL, "about:blank");
-        assert.strictEqual(document.documentURI, "about:blank");
+        assert.strictEqual(window.location.href, "about:blank");
+        assert.strictEqual(window.document.URL, "about:blank");
+        assert.strictEqual(window.document.documentURI, "about:blank");
       });
     });
 
@@ -190,22 +193,127 @@ describe("newapi1", () => {
         assert.instanceOf(dom.virtualConsole, jsdom.VirtualConsole);
       });
     });
+
+    describe("dangerouslyRunScripts", () => {
+      it("should not execute any scripts by default", () => {
+        const dom = jsdom(`<body>
+          <script>document.body.appendChild(document.createElement("hr"));</script>
+        </body>`);
+
+        assert.strictEqual(dom.window.document.body.children.length, 1);
+      });
+
+      it("should execute scripts when set to true", () => {
+        const dom = jsdom(`<body>
+          <script>document.body.appendChild(document.createElement("hr"));</script>
+        </body>`, { dangerouslyRunScripts: true });
+
+        assert.strictEqual(dom.window.document.body.children.length, 2);
+      });
+
+      // Broken: right now dangerouslyRunScripts is what does the vm stuff, which makes window.eval exist :(
+      it.skip("should not impact window.eval when omitted", () => {
+        const window = jsdom().window;
+
+        window.eval(`document.body.innerHTML = "<p>Hello, world!</p>";`);
+        assert.strictEqual(window.document.body.children.length, 1);
+      });
+    });
   });
 
   describe("methods", () => {
     describe("serialize", () => {
+      it("should serialize the default document correctly", () => {
+        const dom = jsdom();
 
+        assert.strictEqual(dom.serialize(), `<html><head></head><body></body></html>`);
+      });
+
+      it("should serialize a text-only document correctly", () => {
+        const dom = jsdom(`hello`);
+
+        assert.strictEqual(dom.serialize(), `<html><head></head><body>hello</body></html>`);
+      });
+
+      it("should serialize a document with HTML correctly", () => {
+        const dom = jsdom(`<!DOCTYPE html><html><head></head><body><p>hello world!</p></body></html>`);
+
+        assert.strictEqual(dom.serialize(),
+                           `<!DOCTYPE html><html><head></head><body><p>hello world!</p></body></html>`);
+      });
     });
 
     describe("nodeLocation", () => {
+      it("should give the correct location for an element", () => {
+        const dom = jsdom(`<p>Hello</p>`);
+        const node = dom.window.document.querySelector("p");
 
+        assert.deepEqual(dom.nodeLocation(node), {
+          start: 0,
+          end: 12,
+          startTag: { start: 0, end: 3 },
+          endTag: { start: 8, end: 12 }
+        });
+      });
+
+      it("should give the correct location for a text node", () => {
+        const dom = jsdom(`<p>Hello</p>`);
+        const node = dom.window.document.querySelector("p").firstChild;
+
+        assert.deepEqual(dom.nodeLocation(node), { start: 3, end: 8 });
+      });
+
+      it("should give the correct location for a void element", () => {
+        const dom = jsdom(`<p>Hello
+          <img src="foo.jpg">
+        </p>`);
+        const node = dom.window.document.querySelector("img");
+
+        assert.deepEqual(dom.nodeLocation(node), { start: 19, end: 38 });
+      });
     });
 
     describe("reconfigureWindow", () => {
+      it("should be able to reconfigure the top property (as tested from the outside)", () => {
+        const dom = jsdom();
+        const newTop = { is: "top" };
 
+        dom.reconfigureWindow({ top: newTop });
+
+        assert.strictEqual(dom.window.top, newTop);
+      });
+
+      it("should be able to reconfigure the top property (as tested from the inside)", () => {
+        const dom = jsdom(``, { dangerouslyRunScripts: true });
+        const newTop = { is: "top" };
+
+        dom.reconfigureWindow({ top: newTop });
+
+        dom.window.document.body.innerHTML = `<script>
+          window.topResult = top.is;
+        </script>`;
+
+        assert.strictEqual(dom.window.topResult, "top");
+      });
+
+      specify("Passing no top option does nothing", () => {
+        const dom = jsdom();
+
+        dom.reconfigureWindow({ });
+
+        assert.strictEqual(dom.window.top, dom.window);
+      });
+
+      specify("Passing undefined for top does change it to undefined", () => {
+        const dom = jsdom();
+
+        dom.reconfigureWindow({ top: undefined });
+
+        assert.strictEqual(dom.window.top, undefined);
+      });
     });
 
-    describe("changeURL", () => {
+    describe.skip("changeURL", () => {
 
     });
   });
