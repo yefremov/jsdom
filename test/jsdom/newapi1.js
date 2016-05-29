@@ -194,29 +194,32 @@ describe("newapi1", () => {
       });
     });
 
-    describe("dangerouslyRunScripts", () => {
+    describe("runScripts", () => {
       it("should not execute any scripts by default", () => {
         const dom = jsdom(`<body>
           <script>document.body.appendChild(document.createElement("hr"));</script>
         </body>`);
 
         assert.strictEqual(dom.window.document.body.children.length, 1);
+        assert.strictEqual(dom.window.eval, undefined);
       });
 
-      it("should execute scripts when set to true", () => {
+      it("should execute <script>s and eval when set to \"dangerously\"", () => {
         const dom = jsdom(`<body>
           <script>document.body.appendChild(document.createElement("hr"));</script>
-        </body>`, { dangerouslyRunScripts: true });
+        </body>`, { runScripts: "dangerously" });
+        dom.window.eval(`document.body.appendChild(document.createElement("p"));`);
 
-        assert.strictEqual(dom.window.document.body.children.length, 2);
+        assert.strictEqual(dom.window.document.body.children.length, 3);
       });
 
-      // Broken: right now dangerouslyRunScripts is what does the vm stuff, which makes window.eval exist :(
-      it.skip("should not impact window.eval when omitted", () => {
-        const window = jsdom().window;
+      it("should only run eval when set to \"outside-only\"", () => {
+        const dom = jsdom(`<body>
+          <script>document.body.appendChild(document.createElement("hr"));</script>
+        </body>`, { runScripts: "outside-only" });
+        dom.window.eval(`document.body.appendChild(document.createElement("p"));`);
 
-        window.eval(`document.body.innerHTML = "<p>Hello, world!</p>";`);
-        assert.strictEqual(window.document.body.children.length, 1);
+        assert.strictEqual(dom.window.document.body.children.length, 2);
       });
     });
   });
@@ -284,7 +287,7 @@ describe("newapi1", () => {
       });
 
       it("should be able to reconfigure the top property (as tested from the inside)", () => {
-        const dom = jsdom(``, { dangerouslyRunScripts: true });
+        const dom = jsdom(``, { runScripts: "dangerously" });
         const newTop = { is: "top" };
 
         dom.reconfigureWindow({ top: newTop });
