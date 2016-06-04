@@ -39,15 +39,13 @@ The `jsdom` function accepts a second parameter which can be used to customize y
 const dom = jsdom(``, {
   url: "https://example.org/",
   referrer: "https://example.com/",
-  contentType: "text/html+awesomesauce",
-  parsingMode: "html"
+  contentType: "text/html"
 });
 ```
 
 - `url` sets the value returned by `window.location`, `document.URL`, and `document.documentURI`, but it also affects things like resolution of relative URLs within the document, and the same-origin checks and referrer used in fetching external resources. It defaults to `"about:blank"`.
 - `referrer` just affects the value read from `document.referrer`. It defaults to `"about:blank"`.
-- `contentType` just affects the value read from `document.contentType`. By default it will be `"text/html"`, unless you override the parsing mode to be XML (see below), in which case it will be `"application/xml"`.
-- `parsingMode` can be either `"html"`, the default, or `"xml"`, indicating to parse the document as XML.
+- `contentType` affects the value read from `document.contentType`, and how the document is parsed: as HTML or as XML. Values that are not `"text/html"` or an [XML mime type](https://html.spec.whatwg.org/multipage/infrastructure.html#xml-mime-type) will throw. It defaults to `"text/html"`.
 
 Note that both `url` and `referrer` are canonicalized before they're used, so e.g. if you pass in `"https:example.com"`, jsdom will interpret that as if you had given `"https://example.com/"`. If you pass an unparseable URL, the call will throw. (URLs are parsed according to the [URL Standard](http://url.spec.whatwg.org/).)
 
@@ -156,7 +154,7 @@ Once you have called the `jsdom()` function, you'll get back a `JSDOM` object wi
 
 The property `window` retrieves the `Window` object that you created.
 
-The properties `virtualConsole`, `cookieJar`, and `parsingMode` reflect the options you pass in, or the defaults if nothing was passed in for those options.
+The properties `virtualConsole` and `cookieJar` reflect the options you pass in, or the defaults if nothing was passed in for those options.
 
 ### Serializing the document with `serialize()`
 
@@ -246,5 +244,6 @@ The New API is definitely not considered finished. In addition to responding to 
 - Speculative additional API ideas:
   - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``jsdom(`<template>${html}</template>`, options).window.document.body.firstChild.content``.)
   - `jsdom.jQuery(html, options)` which gives you back a `$` function for operating on the resulting DOM, similar to Cheerio.
+- Disable node locations by default, for performance gains?
 
 We're also wondering whether we should consolidate `reconfigureWindow` and `changeURL` into a single `reconfigure({ windowTop, url })` API, which might be more future-proof for further additions.

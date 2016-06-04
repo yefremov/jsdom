@@ -95,51 +95,43 @@ describe("newapi1", () => {
       });
     });
 
-    describe("contentType/parsingMode", () => {
-      it("should allow customizing document content type via the contentType option", () => {
-        const document = jsdom(``, { contentType: "text/html+funstuff" }).window.document;
-
-        assert.strictEqual(document.contentType, "text/html+funstuff");
-      });
-
-      it("should have a default content type of text/html and parsing mode of html", () => {
+    describe("contentType", () => {
+      it("should have a default content type of text/html", () => {
         const dom = jsdom();
         const document = dom.window.document;
 
         assert.strictEqual(document.contentType, "text/html");
-        assert.strictEqual(dom.parsingMode, "html");
       });
 
-      it("should have a default content type of text/html with parsingMode html", () => {
-        const dom = jsdom(``, { parsingMode: "html" });
-        const document = dom.window.document;
+      it("should allow customizing document content type via the contentType option", () => {
+        const document = jsdom(``, { contentType: "application/funstuff+xml" }).window.document;
+
+        assert.strictEqual(document.contentType, "application/funstuff+xml");
+      });
+
+      it("should not show content type parameters in document.contentType (HTML)", () => {
+        const document = jsdom(``, { contentType: "text/html; charset=utf8" }).window.document;
 
         assert.strictEqual(document.contentType, "text/html");
-        assert.strictEqual(dom.parsingMode, "html");
       });
 
-      it("should have a default content type of application/xml with parsingMode xml", () => {
-        const dom = jsdom(``, { parsingMode: "xml" });
-        const document = dom.window.document;
-
-        assert.strictEqual(document.contentType, "application/xml");
-        assert.strictEqual(dom.parsingMode, "xml");
-      });
-
-      it("should be able to override the content type for parsingMode html documents", () => {
-        const document = jsdom(``, { parsingMode: "html", contentType: "text/html+awesomesauce" }).window.document;
-
-        assert.strictEqual(document.contentType, "text/html+awesomesauce");
-      });
-
-      it("should be able to override the content type for parsingMode xml documents", () => {
-        const document = jsdom(``, { parsingMode: "xml", contentType: "application/xhtml+xml" }).window.document;
+      it("should not show content type parameters in document.contentType (XML)", () => {
+        const document = jsdom(``, { contentType: "application/xhtml+xml; charset=utf8" })
+                         .window.document;
 
         assert.strictEqual(document.contentType, "application/xhtml+xml");
       });
 
-      it("should disallow parsing modes that are not xml or html", () => {
-        assert.throws(() => jsdom(``, { parsingMode: "sgml" }), RangeError);
+      it("should disallow content types that are unparseable", () => {
+        assert.throws(() => jsdom(``, { contentType: "" }), TypeError);
+        assert.throws(() => jsdom(``, { contentType: "html" }), TypeError);
+        assert.throws(() => jsdom(``, { contentType: "text/html/xml" }), TypeError);
+      });
+
+      it("should disallow content types that are not XML or HTML", () => {
+        assert.throws(() => jsdom(``, { contentType: "text/sgml" }), RangeError);
+        assert.throws(() => jsdom(``, { contentType: "application/javascript" }), RangeError);
+        assert.throws(() => jsdom(``, { contentType: "text/plain" }), RangeError);
       });
     });
 
