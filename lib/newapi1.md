@@ -253,6 +253,7 @@ The New API is definitely not considered finished. In addition to responding to 
   - `jsdom.fromURL()` will likely not support much customization (such as the current `headers` option). Instead, you'll be urged to make your own requests and use `jsdom()`.
 - Fetching configuration, for parity with the current `pool`, `agentOptions`, `strictSSL`, and `proxy` options.
 - Miscellaneous options, such as `concurrentNodeIterators`.
+- Accept `Buffer`s, typed arrays, and DataViews, along with an `encoding` option, to allow decoding binary data and setting the document's encoding. `encoding` is optional; if not present we default to scanning the bytes for a meta charset. (Strings-as-input stay utf-8 as the charset.)
 - Speculative additional API ideas:
   - A `dom.loaded` promise that is fulfilled alongside the window's `"load"` event
   - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``jsdom(`<template>${html}</template>`, options).window.document.body.firstChild.content``.)
