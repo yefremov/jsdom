@@ -1,5 +1,9 @@
 "use strict";
 
+require("./newapi1/basics.js");
+require("./newapi1/methods.js");
+require("./newapi1/options.js");
+
 require("./jsdom/encoding.js");
 require("./jsdom/env.js");
 require("./jsdom/inside-worker-smoke-tests.js");
@@ -7,7 +11,6 @@ require("./jsdom/misc.js");
 require("./jsdom/named-properties-tracker.js");
 require("./jsdom/namespaces.js");
 require("./jsdom/node-location.js");
-require("./jsdom/newapi1.js");
 require("./jsdom/parsing.js");
 require("./jsdom/reconfigure-window.js");
 require("./jsdom/resource-loading.js");
