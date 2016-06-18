@@ -151,6 +151,17 @@ describe("newapi1", () => {
       });
     });
 
+    describe("includeNodeLocations", () => {
+      it("should throw when set to true alongside an XML content type", () => {
+        assert.throws(() => jsdom(``, {
+          includeNodeLocations: true,
+          contentType: "application/xhtml+xml"
+        }));
+      });
+
+      // mostly tested by nodeLocation() tests
+    });
+
     describe("cookieJar", () => {
       it("should use the passed cookie jar", () => {
         const cookieJar = new jsdom.CookieJar();
@@ -320,8 +331,22 @@ describe("newapi1", () => {
     });
 
     describe("nodeLocation", () => {
-      it("should give the correct location for an element", () => {
+      it("should throw when includeNodeLocations is left as the default (false)", () => {
         const dom = jsdom(`<p>Hello</p>`);
+        const node = dom.window.document.querySelector("p");
+
+        assert.throws(() => dom.nodeLocation(node));
+      });
+
+      it("should throw when includeNodeLocations is set explicitly to false", () => {
+        const dom = jsdom(`<p>Hello</p>`, { includeNodeLocations: false });
+        const node = dom.window.document.querySelector("p");
+
+        assert.throws(() => dom.nodeLocation(node));
+      });
+
+      it("should give the correct location for an element", () => {
+        const dom = jsdom(`<p>Hello</p>`, { includeNodeLocations: true });
         const node = dom.window.document.querySelector("p");
 
         assert.deepEqual(dom.nodeLocation(node), {
@@ -333,7 +358,7 @@ describe("newapi1", () => {
       });
 
       it("should give the correct location for a text node", () => {
-        const dom = jsdom(`<p>Hello</p>`);
+        const dom = jsdom(`<p>Hello</p>`, { includeNodeLocations: true });
         const node = dom.window.document.querySelector("p").firstChild;
 
         assert.deepEqual(dom.nodeLocation(node), { start: 3, end: 8 });
@@ -342,7 +367,7 @@ describe("newapi1", () => {
       it("should give the correct location for a void element", () => {
         const dom = jsdom(`<p>Hello
           <img src="foo.jpg">
-        </p>`);
+        </p>`, { includeNodeLocations: true });
         const node = dom.window.document.querySelector("img");
 
         assert.deepEqual(dom.nodeLocation(node), { start: 19, end: 38 });
