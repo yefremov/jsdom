@@ -4,6 +4,7 @@ const describe = require("mocha-sugar-free").describe;
 const it = require("mocha-sugar-free").it;
 
 const jsdom = require("../../lib/newapi1.js");
+const { version: packageVersion } = require("../../package.json");
 
 describe("newapi1", () => {
   describe("basic functionality", () => {
@@ -132,6 +133,21 @@ describe("newapi1", () => {
         assert.throws(() => jsdom(``, { contentType: "text/sgml" }), RangeError);
         assert.throws(() => jsdom(``, { contentType: "application/javascript" }), RangeError);
         assert.throws(() => jsdom(``, { contentType: "text/plain" }), RangeError);
+      });
+    });
+
+    describe("userAgent", () => {
+      it("should have a default user agent following the correct pattern", () => {
+        const expected = `Mozilla/5.0 (${process.platform}) AppleWebKit/537.36 ` +
+                         `(KHTML, like Gecko) jsdom/${packageVersion}`;
+
+        const dom = jsdom();
+        assert.strictEqual(dom.window.navigator.userAgent, expected);
+      });
+
+      it("should set the user agent to the given value", () => {
+        const dom = jsdom(``, { userAgent: "test user agent" });
+        assert.strictEqual(dom.window.navigator.userAgent, "test user agent");
       });
     });
 

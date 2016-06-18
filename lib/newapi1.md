@@ -41,15 +41,17 @@ The `jsdom` function accepts a second parameter which can be used to customize y
 const dom = jsdom(``, {
   url: "https://example.org/",
   referrer: "https://example.com/",
-  contentType: "text/html"
+  contentType: "text/html",
+  userAgent: "TODO: replace this with the weird browsernator example from the spec"
 });
 ```
 
 - `url` sets the value returned by `window.location`, `document.URL`, and `document.documentURI`, and affects things like resolution of relative URLs within the document and the same-origin restrictions and referrer used while fetching external resources. It defaults to `"about:blank"`.
 - `referrer` just affects the value read from `document.referrer`. It defaults to `"about:blank"`.
 - `contentType` affects the value read from `document.contentType`, and how the document is parsed: as HTML or as XML. Values that are not `"text/html"` or an [XML mime type](https://html.spec.whatwg.org/multipage/infrastructure.html#xml-mime-type) will throw. It defaults to `"text/html"`.
+- `userAgent` affects the value read from `navigator.userAgent`, as well as the `User-Agent` header sent while fetching external resources. It defaults to <code>\`Mozilla/5.0 (${process.platform}) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/${jsdomVersion}\`</code>.
 
-Note that both `url` and `referrer` are canonicalized before they're used, so e.g. if you pass in `"https:example.com"`, jsdom will interpret that as if you had given `"https://example.com/"`. If you pass an unparseable URL, the call will throw. (URLs are parsed according to the [URL Standard](http://url.spec.whatwg.org/).)
+Note that both `url` and `referrer` are canonicalized before they're used, so e.g. if you pass in `"https:example.com"`, jsdom will interpret that as if you had given `"https://example.com/"`. If you pass an unparseable URL, the call will throw. (URLs are parsed and serialized according to the [URL Standard](http://url.spec.whatwg.org/).)
 
 ### Executing Scripts
 
@@ -236,7 +238,7 @@ The New API is definitely not considered finished. In addition to responding to 
   - A `beforeParse` option to parallel the current `created` hook.
   - A `dom.loaded` promise that is fulfilled alongside the window's `"load"` event?
 - Fetching configuration, for parity with the current `pool`, `agentOptions`, `strictSSL`, and `proxy` options.
-- Miscellaneous options, such as `userAgent` and `concurrentNodeIterators`.
+- Miscellaneous options, such as `concurrentNodeIterators`.
 - Speculative additional API ideas:
   - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``jsdom(`<template>${html}</template>`, options).window.document.body.firstChild.content``.)
   - `jsdom.jQuery(html, options)` which gives you back a `$` function for operating on the resulting DOM, similar to Cheerio.
