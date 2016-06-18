@@ -268,88 +268,105 @@ describe("newapi1", () => {
       });
     });
 
-    describe("reconfigureWindow", () => {
-      it("should be able to reconfigure the top property (as tested from the outside)", () => {
-        const dom = jsdom();
-        const newTop = { is: "top" };
+    describe("reconfigure", () => {
+      describe("windowTop", () => {
+        it("should reconfigure the window.top property (tested from the outside)", () => {
+          const dom = jsdom();
+          const newTop = { is: "top" };
 
-        dom.reconfigureWindow({ top: newTop });
+          dom.reconfigure({ windowTop: newTop });
 
-        assert.strictEqual(dom.window.top, newTop);
+          assert.strictEqual(dom.window.top, newTop);
+        });
+
+        it("should reconfigure the window.top property (tested from the inside)", () => {
+          const dom = jsdom(``, { runScripts: "dangerously" });
+          const newTop = { is: "top" };
+
+          dom.reconfigure({ windowTop: newTop });
+
+          dom.window.document.body.innerHTML = `<script>
+            window.topResult = top.is;
+          </script>`;
+
+          assert.strictEqual(dom.window.topResult, "top");
+        });
+
+        specify("Passing no top option does nothing", () => {
+          const dom = jsdom();
+
+          dom.reconfigure({ });
+
+          assert.strictEqual(dom.window.top, dom.window);
+        });
+
+        specify("Passing undefined for top does change it to undefined", () => {
+          const dom = jsdom();
+
+          dom.reconfigure({ windowTop: undefined });
+
+          assert.strictEqual(dom.window.top, undefined);
+        });
       });
 
-      it("should be able to reconfigure the top property (as tested from the inside)", () => {
-        const dom = jsdom(``, { runScripts: "dangerously" });
-        const newTop = { is: "top" };
+      describe("url", () => {
+        it("should successfully change the URL", () => {
+          const dom = jsdom(``, { url: "http://example.com/" });
+          const window = dom.window;
 
-        dom.reconfigureWindow({ top: newTop });
+          assert.strictEqual(window.document.URL, "http://example.com/");
 
-        dom.window.document.body.innerHTML = `<script>
-          window.topResult = top.is;
-        </script>`;
+          function testPass(urlString, expected = urlString) {
+            dom.reconfigure({ url: urlString } );
 
-        assert.strictEqual(dom.window.topResult, "top");
-      });
+            assert.strictEqual(window.location.href, expected);
+            assert.strictEqual(window.document.URL, expected);
+            assert.strictEqual(window.document.documentURI, expected);
+          }
 
-      specify("Passing no top option does nothing", () => {
-        const dom = jsdom();
+          testPass("http://localhost", "http://localhost/");
+          testPass("http://www.localhost", "http://www.localhost/");
+          testPass("http://www.localhost.com", "http://www.localhost.com/");
+          testPass("https://localhost/");
+          testPass("file://path/to/my/location/");
+          testPass("http://localhost.subdomain.subdomain/");
+          testPass("http://localhost:3000/");
+          testPass("http://localhost/");
+        });
 
-        dom.reconfigureWindow({ });
+        it("should throw and not impact the URL when trying to change to an unparseable URL", () => {
+          const dom = jsdom(``, { url: "http://example.com/" });
+          const window = dom.window;
 
-        assert.strictEqual(dom.window.top, dom.window);
-      });
+          assert.strictEqual(window.document.URL, "http://example.com/");
 
-      specify("Passing undefined for top does change it to undefined", () => {
-        const dom = jsdom();
+          function testFail(url) {
+            assert.throws(() => dom.reconfigure({ url }), TypeError);
 
-        dom.reconfigureWindow({ top: undefined });
+            assert.strictEqual(window.location.href, "http://example.com/");
+            assert.strictEqual(window.document.URL, "http://example.com/");
+            assert.strictEqual(window.document.documentURI, "http://example.com/");
+          }
 
-        assert.strictEqual(dom.window.top, undefined);
-      });
-    });
+          testFail("fail");
+          testFail("/fail");
+          testFail("fail.com");
+          testFail(undefined);
+        });
 
-    describe("changeURL", () => {
-      it("should successfully change the URL", () => {
-        const dom = jsdom(``, { url: "http://example.com/" });
-        const window = dom.window;
 
-        assert.strictEqual(window.document.URL, "http://example.com/");
+        it("should not throw and not impact the URL when no url option is given", () => {
+          const dom = jsdom(``, { url: "http://example.com/" });
+          const window = dom.window;
 
-        function testPass(urlString, expected = urlString) {
-          dom.changeURL(urlString);
+          assert.strictEqual(window.document.URL, "http://example.com/");
 
-          assert.strictEqual(window.location.href, expected);
-          assert.strictEqual(window.document.URL, expected);
-          assert.strictEqual(window.document.documentURI, expected);
-        }
-
-        testPass("http://localhost", "http://localhost/");
-        testPass("http://www.localhost", "http://www.localhost/");
-        testPass("http://www.localhost.com", "http://www.localhost.com/");
-        testPass("https://localhost/");
-        testPass("file://path/to/my/location/");
-        testPass("http://localhost.subdomain.subdomain/");
-        testPass("http://localhost:3000/");
-        testPass("http://localhost/");
-      });
-
-      it("should throw and not impact the URL when trying to change to an unparseable URL", () => {
-        const dom = jsdom(``, { url: "http://example.com/" });
-        const window = dom.window;
-
-        assert.strictEqual(window.document.URL, "http://example.com/");
-
-        function testFail(urlString) {
-          assert.throws(() => dom.changeURL(urlString), TypeError);
+          assert.doesNotThrow(() => dom.reconfigure({ }));
 
           assert.strictEqual(window.location.href, "http://example.com/");
           assert.strictEqual(window.document.URL, "http://example.com/");
           assert.strictEqual(window.document.documentURI, "http://example.com/");
-        }
-
-        testFail("fail");
-        testFail("/fail");
-        testFail("fail.com");
+        });
       });
     });
   });

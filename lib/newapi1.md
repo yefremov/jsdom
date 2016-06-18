@@ -19,7 +19,7 @@ const dom = jsdom(`<!DOCTYPE html><p>Hello world</p>`);
 console.log(dom.window.document.querySelector("p").textContent); // "Hello world"
 ```
 
-(Note how jsdom will parse the HTML you pass it just like a browser does, including implied `<html>`, `<head>`, and `<body>` tags.)
+(Note that jsdom will parse the HTML you pass it just like a browser does, including implied `<html>`, `<head>`, and `<body>` tags.)
 
 The resulting object is an instance of the `JSDOM` class, which contains a number of useful properties and methods besides `window`. In general it can be used to act on the jsdom from the "outside," doing things that are not possible with the normal DOM APIs. For simple cases, where you don't need any of this functionality, we recommend a coding pattern like
 
@@ -28,6 +28,8 @@ const window = jsdom(`...`).window;
 // or even
 const document = jsdom(`...`).window.document;
 ```
+
+Full documentation on everything you can do with the `JSDOM` class is below, in the section "`JSDOM` Object API".
 
 ## Customizing jsdom
 
@@ -43,7 +45,7 @@ const dom = jsdom(``, {
 });
 ```
 
-- `url` sets the value returned by `window.location`, `document.URL`, and `document.documentURI`, but it also affects things like resolution of relative URLs within the document, and the same-origin checks and referrer used in fetching external resources. It defaults to `"about:blank"`.
+- `url` sets the value returned by `window.location`, `document.URL`, and `document.documentURI`, and affects things like resolution of relative URLs within the document and the same-origin restrictions and referrer used while fetching external resources. It defaults to `"about:blank"`.
 - `referrer` just affects the value read from `document.referrer`. It defaults to `"about:blank"`.
 - `contentType` affects the value read from `document.contentType`, and how the document is parsed: as HTML or as XML. Values that are not `"text/html"` or an [XML mime type](https://html.spec.whatwg.org/multipage/infrastructure.html#xml-mime-type) will throw. It defaults to `"text/html"`.
 
@@ -53,7 +55,7 @@ Note that both `url` and `referrer` are canonicalized before they're used, so e.
 
 jsdom's most powerful ability is that it can execute scripts inside the jsdom. These scripts can modify the content of the page and access all the web platform APIs jsdom implements.
 
-However, this is also highly dangerous, when dealing with untrusted content. The jsdom sandbox is not foolproof, and code running inside the DOM's `<script>`s can, if it tries hard enough, get access to the Node environment, and thus to your machine. As such, the ability to execute scripts embedded in the HTML is disabled by default:
+However, this is also highly dangerous when dealing with untrusted content. The jsdom sandbox is not foolproof, and code running inside the DOM's `<script>`s can, if it tries hard enough, get access to the Node environment, and thus to your machine. As such, the ability to execute scripts embedded in the HTML is disabled by default:
 
 ```js
 const dom = jsdom(`<body>
@@ -75,7 +77,7 @@ const dom = jsdom(`<body>
 dom.window.document.body.children.length === 2;
 ```
 
-Again we emphasize to only use this when feeding jsdom code you know is safe. If you use it on arbitrary user-supplied code, or code from the internet, you are effectively running untrusted Node.js code, and your machine could be compromised.
+Again we emphasize to only use this when feeding jsdom code you know is safe. If you use it on arbitrary user-supplied code, or code from the Internet, you are effectively running untrusted Node.js code, and your machine could be compromised.
 
 If you are simply trying to execute script "from the outside", instead of letting `<script>` elements (and inline event handlers) run "from the inside", you can use the `runScripts: "outside-only"` option, which enables `window.eval`:
 
@@ -88,11 +90,11 @@ window.document.body.children.length === 1;
 
 This is turned off by default for performance reasons, but is safe to enable.
 
-Note that we strongly advise against trying to "execute scripts" by mashing together the jsdom and Node global environments (e.g. by doing `global.window = dom.window`), and then executing scripts or test code inside the Node global environment. Instead, you should treat jsdom like you would a browser, and run all scripts and tests that need access to a DOM inside the jsdom environment, using `window.eval` or `dangerouslyRunScripts`. This might require, for example, creating a browserify bundle to execute as a `<script>` element—just like you would in a browser.
+Note that we strongly advise against trying to "execute scripts" by mashing together the jsdom and Node global environments (e.g. by doing `global.window = dom.window`), and then executing scripts or test code inside the Node global environment. Instead, you should treat jsdom like you would a browser, and run all scripts and tests that need access to a DOM inside the jsdom environment, using `window.eval` or `{ runScripts: "dangerously" }`. This might require, for example, creating a browserify bundle to execute as a `<script>` element—just like you would in a browser.
 
 ### Virtual Consoles
 
-Like web browsers, jsdom has the concept of a "console", where information both directly logged from the page (via scripts executing inside the document) and information about errors that have occurred are logged. We call the user-controllable console a "virtual console", to distinguish it from the Node.js `console` API and from the inside-the-page `window.console` API.
+Like web browsers, jsdom has the concept of a "console". This records both information directly sent from the page, via scripts executing inside the document, as well as information from the jsdom implementation itself. We call the user-controllable console a "virtual console", to distinguish it from the Node.js `console` API and from the inside-the-page `window.console` API.
 
 By default, the `jsdom` function will return a `JSDOM` instance with a virtual console that forwards all its output to the Node.js console. To create your own virtual console and pass it to jsdom, you can override this default by doing
 
@@ -101,7 +103,7 @@ const virtualConsole = new jsdom.VirtualConsole();
 const dom = jsdom(``, { virtualConsole });
 ```
 
-Code like this will create a virtual console with no behavior, which you can intercept by adding event listeners for all the possible console methods:
+Code like this will create a virtual console with no behavior. You can give it behavior by adding event listeners for all the possible console methods:
 
 ```js
 virtualConsole.on("error", () => { ... });
@@ -123,7 +125,7 @@ There is also a special event, `"jsdomError"`, which will fire with error object
 
 - Errors loading or parsing external resources (scripts, stylesheets, frames, and iframes)
 - Script execution errors that are not handled by a window `onerror` event handler that returns `true` or calls `event.preventDefault()`
-- Calls to methods, like `window.alert`, which jsdom does not implement, but installs anyway for web compatibility
+- Not-implemented errors resulting from calls to methods, like `window.alert`, which jsdom does not implement, but installs anyway for web compatibility
 
 If you're using `sendTo(console)` to send errors to `console`, by default it will call `console.error` with information from `"jsdomError"` events. If you'd prefer to maintain a strict one-to-one mapping of events to method calls, and perhaps handle `"jsdomError"`s yourself, then you can do
 
@@ -133,16 +135,16 @@ virtualConsole.sendTo(console, { omitJsdomErrors: true });
 
 ### Cookie Jars
 
-Like web browsers, jsdom has the concept of a cookie jar, storing HTTP cookies. Cookies that have a URL on the same domain and are not marked HTTP-only are accessible to the document via the `document.cookie` API, and all cookies in the cookie jar will impact the fetching of external resources.
+Like web browsers, jsdom has the concept of a cookie jar, storing HTTP cookies. Cookies that have a URL on the same domain as the document, and are not marked HTTP-only, are accessible via the `document.cookie` API. Additionally, all cookies in the cookie jar will impact the fetching of external resources.
 
-By default, the `jsdom` function will return a `JSDOM` instance with a cookie jar with no cookies. To create your own cookie jar and pass it to jsdom, you can override this default by doing
+By default, the `jsdom` function will return a `JSDOM` instance with an empty cookie jar. To create your own cookie jar and pass it to jsdom, you can override this default by doing
 
 ```js
 const cookieJar = new jsdom.CookieJar(store, options);
 const dom = jsdom(``, { cookieJar });
 ```
 
-This is mostly useful if you want to share the same cookie jar among multiple jsdoms. Note that passing in the cookie jar like this will ensure any manipulation of cookies that happens during parsing (due to script execution) is captured.
+This is mostly useful if you want to share the same cookie jar among multiple jsdoms, or prime the cookie jar with certain values ahead of time.
 
 Cookie jars are provided by the [tough-cookie](https://www.npmjs.com/package/tough-cookie) package. The `jsdom.CookieJar` constructor is a subclass of the tough-cookie cookie jar which by default sets the `looseMode: true` option, since that [matches better how browsers behave](https://www.npmjs.com/package/tough-cookie). If you want to use tough-cookie's utilities and classes yourself, you can use the `jsdom.toughCookie` export to get access to the tough-cookie module instance packaged with jsdom.
 
@@ -154,7 +156,7 @@ Once you have called the `jsdom()` function, you'll get back a `JSDOM` object wi
 
 The property `window` retrieves the `Window` object that you created.
 
-The properties `virtualConsole` and `cookieJar` reflect the options you pass in, or the defaults if nothing was passed in for those options.
+The properties `virtualConsole` and `cookieJar` reflect the options you pass in, or the defaults created for you if nothing was passed in for those options.
 
 ### Serializing the document with `serialize()`
 
@@ -190,33 +192,27 @@ console.log(dom.nodeLocation(textNode)); // { start: 3, end: 13 }
 console.log(dom.nodeLocation(imgEl));    // { start: 13, end: 32 }
 ```
 
-### Reconfiguring window properties with `reconfigureWindow(props)`
+### Reconfiguring the jsdom with `reconfigure(settings)`
 
-The `top` property on `window` is marked `[Unforgeable]` in the spec, meaning it is a non-configurable own property and thus cannot be overridden or shadowed by normal code running inside the jsdom, even using `Object.defineProperty`. However, if you're acting from outside the window, e.g. in some test framework that creates jsdoms, you can override it using the special `reconfigureWindow()` method:
+The `top` property on `window` is marked `[Unforgeable]` in the spec, meaning it is a non-configurable own property and thus cannot be overridden or shadowed by normal code running inside the jsdom, even using `Object.defineProperty`.
+
+Similarly, at present jsdom does not handle navigation (such as setting `window.location.href === "https://example.com/"`); doing so will cause the virtual console to emit a `"jsdomError"` explaining that this feature is not implemented, and nothing will change: there will be no new `Window` or `Document` object, and the existing `window`'s `location` object will still have all the same property values.
+
+However, if you're acting from outside the window, e.g. in some test framework that creates jsdoms, you can override both of these using the special `reconfigure()` method:
 
 ```js
 const dom = jsdom();
 
 dom.window.top === dom.window;
-dom.reconfigureWindow({ top: myFakeTopForTesting });
+dom.window.location.href === "about:blank";
+
+dom.reconfigure({ top: myFakeTopForTesting, url: "https://example.com/" });
+
 dom.window.top === myFakeTopForTesting;
-```
-
-In the future we may expand `reconfigureWindow` to allow overriding other `[Unforgeable]` properties. Let us know if you need this capability.
-
-### Changing the document URL with `changeURL(url)`
-
-At present jsdom does not handle navigation (such as setting `window.location.href === "https://example.com/"`); doing so will cause the virtual console to emit a `"jsdomError"` explaining that this feature is not implemented, and nothing will change: there will be no new `Window` or `Document` object. However, if you'd like to change the URL of an existing jsdom (such as for testing purposes), you can use the `changeURL()` method:
-
-```js
-const dom = jsdom(``, { url: "https://example.com/" });
-
 dom.window.location.href === "https://example.com/";
-dom.changeURL("https://example.org/");
-dom.window.location.href === "https://example.org/";
 ```
 
-This will impact all APIs that return the current document URL, such as `window.location`, `document.URL`, and `document.documentURI`, as well as resolution of relative URLs within the document, and the same-origin checks and referrer used in fetching external resources.
+Note that changing the jsdom's URL will impact all APIs that return the current document URL, such as `window.location`, `document.URL`, and `document.documentURI`, as well as resolution of relative URLs within the document, and the same-origin checks and referrer used while fetching external resources.
 
 ## Future New API Work
 
@@ -245,5 +241,3 @@ The New API is definitely not considered finished. In addition to responding to 
   - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``jsdom(`<template>${html}</template>`, options).window.document.body.firstChild.content``.)
   - `jsdom.jQuery(html, options)` which gives you back a `$` function for operating on the resulting DOM, similar to Cheerio.
 - Disable node locations by default, for performance gains?
-
-We're also wondering whether we should consolidate `reconfigureWindow` and `changeURL` into a single `reconfigure({ windowTop, url })` API, which might be more future-proof for further additions.
