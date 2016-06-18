@@ -150,6 +150,21 @@ This is mostly useful if you want to share the same cookie jar among multiple js
 
 Cookie jars are provided by the [tough-cookie](https://www.npmjs.com/package/tough-cookie) package. The `jsdom.CookieJar` constructor is a subclass of the tough-cookie cookie jar which by default sets the `looseMode: true` option, since that [matches better how browsers behave](https://www.npmjs.com/package/tough-cookie). If you want to use tough-cookie's utilities and classes yourself, you can use the `jsdom.toughCookie` export to get access to the tough-cookie module instance packaged with jsdom.
 
+### Intervening Before Parsing
+
+jsdom allows you to intervene in the creation of a jsdom very early: after the `Window` and `Document` objects are created, but before any HTML is parsed to populate the document with nodes:
+
+```js
+const dom = jsdom(`<p>Hello</p>`, {
+  beforeParse(window) {
+    window.document.childNodes.length === 0;
+    window.someCoolAPI = () => { /* ... */ };
+  }
+});
+```
+
+This is especially useful if you are wanting to modify the environment in some way, for example adding shims for web platform APIs jsdom does not support.
+
 ## `JSDOM` Object API
 
 Once you have called the `jsdom()` function, you'll get back a `JSDOM` object with the following capabilities.
@@ -234,12 +249,11 @@ The New API is definitely not considered finished. In addition to responding to 
   ```
 - Promise-returning convenience methods, `jsdom.fromFile(filename, options)` and `jsdom.fromURL(url, options)` which will do the appropriate file-reading and fetching for you.
   - `jsdom.fromURL()` will likely not support much customization (such as the current `headers` option). Instead, you'll be urged to make your own requests and use `jsdom()`.
-- Document lifecycle hooks. Tentative plan:
-  - A `beforeParse` option to parallel the current `created` hook.
-  - A `dom.loaded` promise that is fulfilled alongside the window's `"load"` event?
 - Fetching configuration, for parity with the current `pool`, `agentOptions`, `strictSSL`, and `proxy` options.
 - Miscellaneous options, such as `concurrentNodeIterators`.
 - Speculative additional API ideas:
+  - A `dom.loaded` promise that is fulfilled alongside the window's `"load"` event
   - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``jsdom(`<template>${html}</template>`, options).window.document.body.firstChild.content``.)
   - `jsdom.jQuery(html, options)` which gives you back a `$` function for operating on the resulting DOM, similar to Cheerio.
+  - `dom.insertScript(url)` (promise-returning)
 - Disable node locations by default, for performance gains?

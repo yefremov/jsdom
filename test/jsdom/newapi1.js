@@ -230,6 +230,71 @@ describe("newapi1", () => {
         assert.strictEqual(dom.window.document.body.children.length, 2);
       });
     });
+
+    describe("beforeParse", () => {
+      it("should execute with a window and document but no nodes", () => {
+        let windowPassed;
+
+        const dom = jsdom(``, {
+          beforeParse(window) {
+            assert.instanceOf(window, window.Window);
+            assert.instanceOf(window.document, window.Document);
+
+            assert.strictEqual(window.document.doctype, null);
+            assert.strictEqual(window.document.documentElement, null);
+            assert.strictEqual(window.document.childNodes.length, 0);
+
+            windowPassed = window;
+          }
+        });
+
+        assert.strictEqual(windowPassed, dom.window);
+      });
+
+      it("should not have built-ins on the window by default", () => {
+        let windowPassed;
+
+        const dom = jsdom(``, {
+          beforeParse(window) {
+            assert.strictEqual(window.Array, undefined);
+
+            windowPassed = window;
+          }
+        });
+
+        assert.strictEqual(windowPassed, dom.window);
+      });
+
+      it("should have built-ins on the window when running scripts outside-only", () => {
+        let windowPassed;
+
+        const dom = jsdom(``, {
+          runScripts: "outside-only",
+          beforeParse(window) {
+            assert.typeOf(window.Array, "function");
+
+            windowPassed = window;
+          }
+        });
+
+        assert.strictEqual(windowPassed, dom.window);
+      });
+
+      it("should have built-ins on the window when running scripts dangerously", () => {
+        let windowPassed;
+
+        const dom = jsdom(``, {
+          runScripts: "dangerously",
+          beforeParse(window) {
+            assert.typeOf(window.Array, "function");
+
+            windowPassed = window;
+          }
+        });
+
+        assert.strictEqual(windowPassed, dom.window);
+      });
+    });
   });
 
   describe("methods", () => {
