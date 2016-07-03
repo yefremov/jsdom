@@ -237,12 +237,13 @@ Note that changing the jsdom's URL will impact all APIs that return the current 
 
 The New API is definitely not considered finished. In addition to responding to feedback based on your experience, we plan on adding the following functionality:
 
+- A `dom.evalVMScript` API, similar to the one recently added to jsdom, but much better tested, with proper error handling
 - A new custom resource loader loader infrastructure and the ability to enable external resource loads. Tenative plan:
 
   ```js
   const dom = jsdom(``, {
     resources: {
-      allowed: ["script#foo", "iframe", `link[rel="stylesheet"]`] // selector-based filtering
+      allowed: ["script#foo", "iframe", `link[rel="stylesheet"]`] // selector-based filtering. But what about XHR??
       fetch({ url, cookie, referrer, defaultFetch }) {
         // return a promise
       }
@@ -251,11 +252,11 @@ The New API is definitely not considered finished. In addition to responding to 
   ```
 - Promise-returning convenience methods, `jsdom.fromFile(filename, options)` and `jsdom.fromURL(url, options)` which will do the appropriate file-reading and fetching for you.
   - `jsdom.fromURL()` will likely not support much customization (such as the current `headers` option). Instead, you'll be urged to make your own requests and use `jsdom()`.
-- Fetching configuration, for parity with the current `pool`, `agentOptions`, `strictSSL`, and `proxy` options.
+- Fetching configuration, for parity with the current `pool`, `agent`, `agentClass`, `agentOptions`, `strictSSL`, and `proxy` options.
 - Miscellaneous options, such as `concurrentNodeIterators`.
 - Accept `Buffer`s, typed arrays, and DataViews, along with an `encoding` option, to allow decoding binary data and setting the document's encoding. `encoding` is optional; if not present we default to scanning the bytes for a meta charset. (Strings-as-input stay utf-8 as the charset.)
 - Speculative additional API ideas:
   - A `dom.loaded` promise that is fulfilled alongside the window's `"load"` event
   - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``jsdom(`<template>${html}</template>`, options).window.document.body.firstChild.content``.)
   - `jsdom.jQuery(html, options)` which gives you back a `$` function for operating on the resulting DOM, similar to Cheerio.
-  - `dom.insertScript(url)` (promise-returning)
+  - `dom.insertScriptFromURL(url)` and `dom.insertScriptFromFile(filename)` (promise-returning)
