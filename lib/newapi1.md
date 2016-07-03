@@ -1,4 +1,4 @@
-# jsdom New API Docs
+# jsdom new API docs
 
 We are currently attempting to build a new jsdom API which is simpler and more intuitive than the previous one. For now, you can acquire it via
 
@@ -35,7 +35,7 @@ Full documentation on everything you can do with the `JSDOM` class is below, in 
 
 The `jsdom` function accepts a second parameter which can be used to customize your jsdom in the following ways.
 
-### Simple Options
+### Simple options
 
 ```js
 const dom = jsdom(``, {
@@ -55,7 +55,7 @@ const dom = jsdom(``, {
 
 Note that both `url` and `referrer` are canonicalized before they're used, so e.g. if you pass in `"https:example.com"`, jsdom will interpret that as if you had given `"https://example.com/"`. If you pass an unparseable URL, the call will throw. (URLs are parsed and serialized according to the [URL Standard](http://url.spec.whatwg.org/).)
 
-### Executing Scripts
+### Executing scripts
 
 jsdom's most powerful ability is that it can execute scripts inside the jsdom. These scripts can modify the content of the page and access all the web platform APIs jsdom implements.
 
@@ -96,7 +96,7 @@ This is turned off by default for performance reasons, but is safe to enable.
 
 Note that we strongly advise against trying to "execute scripts" by mashing together the jsdom and Node global environments (e.g. by doing `global.window = dom.window`), and then executing scripts or test code inside the Node global environment. Instead, you should treat jsdom like you would a browser, and run all scripts and tests that need access to a DOM inside the jsdom environment, using `window.eval` or `{ runScripts: "dangerously" }`. This might require, for example, creating a browserify bundle to execute as a `<script>` element—just like you would in a browser.
 
-### Virtual Consoles
+### Virtual consoles
 
 Like web browsers, jsdom has the concept of a "console". This records both information directly sent from the page, via scripts executing inside the document, as well as information from the jsdom implementation itself. We call the user-controllable console a "virtual console", to distinguish it from the Node.js `console` API and from the inside-the-page `window.console` API.
 
@@ -137,7 +137,7 @@ If you're using `sendTo(console)` to send errors to `console`, by default it wil
 virtualConsole.sendTo(console, { omitJsdomErrors: true });
 ```
 
-### Cookie Jars
+### Cookie jars
 
 Like web browsers, jsdom has the concept of a cookie jar, storing HTTP cookies. Cookies that have a URL on the same domain as the document, and are not marked HTTP-only, are accessible via the `document.cookie` API. Additionally, all cookies in the cookie jar will impact the fetching of external resources.
 
@@ -152,7 +152,7 @@ This is mostly useful if you want to share the same cookie jar among multiple js
 
 Cookie jars are provided by the [tough-cookie](https://www.npmjs.com/package/tough-cookie) package. The `jsdom.CookieJar` constructor is a subclass of the tough-cookie cookie jar which by default sets the `looseMode: true` option, since that [matches better how browsers behave](https://www.npmjs.com/package/tough-cookie). If you want to use tough-cookie's utilities and classes yourself, you can use the `jsdom.toughCookie` export to get access to the tough-cookie module instance packaged with jsdom.
 
-### Intervening Before Parsing
+### Intervening before parsing
 
 jsdom allows you to intervene in the creation of a jsdom very early: after the `Window` and `Document` objects are created, but before any HTML is parsed to populate the document with nodes:
 
@@ -167,7 +167,7 @@ const dom = jsdom(`<p>Hello</p>`, {
 
 This is especially useful if you are wanting to modify the environment in some way, for example adding shims for web platform APIs jsdom does not support.
 
-## `JSDOM` Object API
+## `JSDOM` object API
 
 Once you have called the `jsdom()` function, you'll get back a `JSDOM` object with the following capabilities.
 
@@ -238,7 +238,7 @@ dom.window.location.href === "https://example.com/";
 
 Note that changing the jsdom's URL will impact all APIs that return the current document URL, such as `window.location`, `document.URL`, and `document.documentURI`, as well as resolution of relative URLs within the document, and the same-origin checks and referrer used while fetching external resources.
 
-## Future New API Work
+## Future new API work
 
 The New API is definitely not considered finished. In addition to responding to feedback based on your experience, we plan on adding the following functionality:
 
