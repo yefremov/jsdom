@@ -195,9 +195,12 @@ dom.window.document.documentElement.outerHTML === "<html><head></head><body>hell
 The `nodeLocation` method will find where a DOM node is within the source document, returning the [parse5 location info](https://www.npmjs.com/package/parse5#options-locationinfo) for the node:
 
 ```js
-const dom = jsdom(`<p>Hello
+const dom = jsdom(
+  `<p>Hello
     <img src="foo.jpg">
-  </p>`);
+  </p>`,
+  { includeNodeLocations: true }
+);
 
 const document = dom.window.document;
 const bodyEl = document.body; // implicitly created
@@ -210,6 +213,8 @@ console.log(dom.nodeLocation(pEl));      // { start: 0, end: 39, startTag: ..., 
 console.log(dom.nodeLocation(textNode)); // { start: 3, end: 13 }
 console.log(dom.nodeLocation(imgEl));    // { start: 13, end: 32 }
 ```
+
+Note that this feature only works if you have set the `includeNodeLocations` option; node locations are off by default for performance reasons.
 
 ### Reconfiguring the jsdom with `reconfigure(settings)`
 
