@@ -42,7 +42,7 @@ const dom = jsdom(``, {
   url: "https://example.org/",
   referrer: "https://example.com/",
   contentType: "text/html",
-  userAgent: "TODO: replace this with the weird browsernator example from the spec",
+  userAgent: "Mellblomenator/9000",
   includeNodeLocations: true
 });
 ```
@@ -230,7 +230,7 @@ const dom = jsdom();
 dom.window.top === dom.window;
 dom.window.location.href === "about:blank";
 
-dom.reconfigure({ top: myFakeTopForTesting, url: "https://example.com/" });
+dom.reconfigure({ windowTop: myFakeTopForTesting, url: "https://example.com/" });
 
 dom.window.top === myFakeTopForTesting;
 dom.window.location.href === "https://example.com/";
