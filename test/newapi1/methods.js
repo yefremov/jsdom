@@ -3,24 +3,24 @@ const assert = require("chai").assert;
 const describe = require("mocha-sugar-free").describe;
 const it = require("mocha-sugar-free").it;
 
-const jsdom = require("../../lib/newapi1.js");
+const { JSDOM } = require("../../lib/newapi1.js");
 
 describe("newapi1 methods", () => {
   describe("serialize", () => {
     it("should serialize the default document correctly", () => {
-      const dom = jsdom();
+      const dom = new JSDOM();
 
       assert.strictEqual(dom.serialize(), `<html><head></head><body></body></html>`);
     });
 
     it("should serialize a text-only document correctly", () => {
-      const dom = jsdom(`hello`);
+      const dom = new JSDOM(`hello`);
 
       assert.strictEqual(dom.serialize(), `<html><head></head><body>hello</body></html>`);
     });
 
     it("should serialize a document with HTML correctly", () => {
-      const dom = jsdom(`<!DOCTYPE html><html><head></head><body><p>hello world!</p></body></html>`);
+      const dom = new JSDOM(`<!DOCTYPE html><html><head></head><body><p>hello world!</p></body></html>`);
 
       assert.strictEqual(dom.serialize(),
                          `<!DOCTYPE html><html><head></head><body><p>hello world!</p></body></html>`);
@@ -29,21 +29,21 @@ describe("newapi1 methods", () => {
 
   describe("nodeLocation", () => {
     it("should throw when includeNodeLocations is left as the default (false)", () => {
-      const dom = jsdom(`<p>Hello</p>`);
+      const dom = new JSDOM(`<p>Hello</p>`);
       const node = dom.window.document.querySelector("p");
 
       assert.throws(() => dom.nodeLocation(node));
     });
 
     it("should throw when includeNodeLocations is set explicitly to false", () => {
-      const dom = jsdom(`<p>Hello</p>`, { includeNodeLocations: false });
+      const dom = new JSDOM(`<p>Hello</p>`, { includeNodeLocations: false });
       const node = dom.window.document.querySelector("p");
 
       assert.throws(() => dom.nodeLocation(node));
     });
 
     it("should give the correct location for an element", () => {
-      const dom = jsdom(`<p>Hello</p>`, { includeNodeLocations: true });
+      const dom = new JSDOM(`<p>Hello</p>`, { includeNodeLocations: true });
       const node = dom.window.document.querySelector("p");
 
       assert.deepEqual(dom.nodeLocation(node), {
@@ -55,14 +55,14 @@ describe("newapi1 methods", () => {
     });
 
     it("should give the correct location for a text node", () => {
-      const dom = jsdom(`<p>Hello</p>`, { includeNodeLocations: true });
+      const dom = new JSDOM(`<p>Hello</p>`, { includeNodeLocations: true });
       const node = dom.window.document.querySelector("p").firstChild;
 
       assert.deepEqual(dom.nodeLocation(node), { start: 3, end: 8 });
     });
 
     it("should give the correct location for a void element", () => {
-      const dom = jsdom(`<p>Hello
+      const dom = new JSDOM(`<p>Hello
         <img src="foo.jpg">
       </p>`, { includeNodeLocations: true });
       const node = dom.window.document.querySelector("img");
@@ -74,7 +74,7 @@ describe("newapi1 methods", () => {
   describe("reconfigure", () => {
     describe("windowTop", () => {
       it("should reconfigure the window.top property (tested from the outside)", () => {
-        const dom = jsdom();
+        const dom = new JSDOM();
         const newTop = { is: "top" };
 
         dom.reconfigure({ windowTop: newTop });
@@ -83,7 +83,7 @@ describe("newapi1 methods", () => {
       });
 
       it("should reconfigure the window.top property (tested from the inside)", () => {
-        const dom = jsdom(``, { runScripts: "dangerously" });
+        const dom = new JSDOM(``, { runScripts: "dangerously" });
         const newTop = { is: "top" };
 
         dom.reconfigure({ windowTop: newTop });
@@ -96,7 +96,7 @@ describe("newapi1 methods", () => {
       });
 
       specify("Passing no top option does nothing", () => {
-        const dom = jsdom();
+        const dom = new JSDOM();
 
         dom.reconfigure({ });
 
@@ -104,7 +104,7 @@ describe("newapi1 methods", () => {
       });
 
       specify("Passing undefined for top does change it to undefined", () => {
-        const dom = jsdom();
+        const dom = new JSDOM();
 
         dom.reconfigure({ windowTop: undefined });
 
@@ -114,7 +114,7 @@ describe("newapi1 methods", () => {
 
     describe("url", () => {
       it("should successfully change the URL", () => {
-        const dom = jsdom(``, { url: "http://example.com/" });
+        const dom = new JSDOM(``, { url: "http://example.com/" });
         const window = dom.window;
 
         assert.strictEqual(window.document.URL, "http://example.com/");
@@ -138,7 +138,7 @@ describe("newapi1 methods", () => {
       });
 
       it("should throw and not impact the URL when trying to change to an unparseable URL", () => {
-        const dom = jsdom(``, { url: "http://example.com/" });
+        const dom = new JSDOM(``, { url: "http://example.com/" });
         const window = dom.window;
 
         assert.strictEqual(window.document.URL, "http://example.com/");
@@ -159,7 +159,7 @@ describe("newapi1 methods", () => {
 
 
       it("should not throw and not impact the URL when no url option is given", () => {
-        const dom = jsdom(``, { url: "http://example.com/" });
+        const dom = new JSDOM(``, { url: "http://example.com/" });
         const window = dom.window;
 
         assert.strictEqual(window.document.URL, "http://example.com/");

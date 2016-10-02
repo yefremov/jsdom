@@ -3,19 +3,18 @@
 We are currently attempting to build a new jsdom API which is simpler and more intuitive than the previous one. For now, you can acquire it via
 
 ```js
-const jsdom = require("jsdom/lib/newapi1");
+const jsdom = require("jsdom/lib/newapi1.js");
+const { JSDOM } = jsdom;
 ```
 
 Like all parts of the public jsdom API, this will be stable for the duration of a major version. Eventually, when we feel the new API has reached parity with the previous one, we'll switch it over to being the default.
 
 ## Basic usage
 
-To use jsdom, just pass it a string. You will get back a `JSDOM` object, which has a number of useful properties, notably `window`:
+To use jsdom, you will primarily use the `JSDOM` constructor, which is a named export of the jsdom main module. Pass the constructor a string. You will get back a `JSDOM` object, which has a number of useful properties, notably `window`:
 
 ```js
-const jsdom = require("jsdom/lib/newap1");
-
-const dom = jsdom(`<!DOCTYPE html><p>Hello world</p>`);
+const dom = new JSDOM(`<!DOCTYPE html><p>Hello world</p>`);
 console.log(dom.window.document.querySelector("p").textContent); // "Hello world"
 ```
 
@@ -24,21 +23,21 @@ console.log(dom.window.document.querySelector("p").textContent); // "Hello world
 The resulting object is an instance of the `JSDOM` class, which contains a number of useful properties and methods besides `window`. In general it can be used to act on the jsdom from the "outside," doing things that are not possible with the normal DOM APIs. For simple cases, where you don't need any of this functionality, we recommend a coding pattern like
 
 ```js
-const window = jsdom(`...`).window;
+const window = (new JSDOM(`...`)).window;
 // or even
-const document = jsdom(`...`).window.document;
+const document = (new JSDOM(`...`)).window.document;
 ```
 
 Full documentation on everything you can do with the `JSDOM` class is below, in the section "`JSDOM` Object API".
 
 ## Customizing jsdom
 
-The `jsdom` function accepts a second parameter which can be used to customize your jsdom in the following ways.
+The `JSDOM` constructor accepts a second parameter which can be used to customize your jsdom in the following ways.
 
 ### Simple options
 
 ```js
-const dom = jsdom(``, {
+const dom = new JSDOM(``, {
   url: "https://example.org/",
   referrer: "https://example.com/",
   contentType: "text/html",
@@ -62,7 +61,7 @@ jsdom's most powerful ability is that it can execute scripts inside the jsdom. T
 However, this is also highly dangerous when dealing with untrusted content. The jsdom sandbox is not foolproof, and code running inside the DOM's `<script>`s can, if it tries hard enough, get access to the Node environment, and thus to your machine. As such, the ability to execute scripts embedded in the HTML is disabled by default:
 
 ```js
-const dom = jsdom(`<body>
+const dom = new JSDOM(`<body>
   <script>document.body.appendChild(document.createElement("hr"));</script>
 </body>`);
 
@@ -73,7 +72,7 @@ dom.window.document.body.children.length === 1;
 To enable executing scripts inside the page, you can use the `runScripts: "dangerously"` option:
 
 ```js
-const dom = jsdom(`<body>
+const dom = new JSDOM(`<body>
   <script>document.body.appendChild(document.createElement("hr"));</script>
 </body>`, { runScripts: "dangerously" });
 
@@ -86,7 +85,7 @@ Again we emphasize to only use this when feeding jsdom code you know is safe. If
 If you are simply trying to execute script "from the outside", instead of letting `<script>` elements (and inline event handlers) run "from the inside", you can use the `runScripts: "outside-only"` option, which enables `window.eval`:
 
 ```js
-const window = jsdom(``, { runScripts: "outside-only" }).window;
+const window = (new JSDOM(``, { runScripts: "outside-only" })).window;
 
 window.eval(`document.body.innerHTML = "<p>Hello, world!</p>";`);
 window.document.body.children.length === 1;
@@ -100,11 +99,11 @@ Note that we strongly advise against trying to "execute scripts" by mashing toge
 
 Like web browsers, jsdom has the concept of a "console". This records both information directly sent from the page, via scripts executing inside the document, as well as information from the jsdom implementation itself. We call the user-controllable console a "virtual console", to distinguish it from the Node.js `console` API and from the inside-the-page `window.console` API.
 
-By default, the `jsdom` function will return a `JSDOM` instance with a virtual console that forwards all its output to the Node.js console. To create your own virtual console and pass it to jsdom, you can override this default by doing
+By default, the `JSDOM` constructor will return an instance with a virtual console that forwards all its output to the Node.js console. To create your own virtual console and pass it to jsdom, you can override this default by doing
 
 ```js
 const virtualConsole = new jsdom.VirtualConsole();
-const dom = jsdom(``, { virtualConsole });
+const dom = new JSDOM(``, { virtualConsole });
 ```
 
 Code like this will create a virtual console with no behavior. You can give it behavior by adding event listeners for all the possible console methods:
@@ -141,23 +140,23 @@ virtualConsole.sendTo(console, { omitJsdomErrors: true });
 
 Like web browsers, jsdom has the concept of a cookie jar, storing HTTP cookies. Cookies that have a URL on the same domain as the document, and are not marked HTTP-only, are accessible via the `document.cookie` API. Additionally, all cookies in the cookie jar will impact the fetching of external resources.
 
-By default, the `jsdom` function will return a `JSDOM` instance with an empty cookie jar. To create your own cookie jar and pass it to jsdom, you can override this default by doing
+By default, the `JSDOM` constructor will return an instance with an empty cookie jar. To create your own cookie jar and pass it to jsdom, you can override this default by doing
 
 ```js
 const cookieJar = new jsdom.CookieJar(store, options);
-const dom = jsdom(``, { cookieJar });
+const dom = new JSDOM(``, { cookieJar });
 ```
 
 This is mostly useful if you want to share the same cookie jar among multiple jsdoms, or prime the cookie jar with certain values ahead of time.
 
-Cookie jars are provided by the [tough-cookie](https://www.npmjs.com/package/tough-cookie) package. The `jsdom.CookieJar` constructor is a subclass of the tough-cookie cookie jar which by default sets the `looseMode: true` option, since that [matches better how browsers behave](https://www.npmjs.com/package/tough-cookie). If you want to use tough-cookie's utilities and classes yourself, you can use the `jsdom.toughCookie` export to get access to the tough-cookie module instance packaged with jsdom.
+Cookie jars are provided by the [tough-cookie](https://www.npmjs.com/package/tough-cookie) package. The `jsdom.CookieJar` constructor is a subclass of the tough-cookie cookie jar which by default sets the `looseMode: true` option, since that [matches better how browsers behave](https://www.npmjs.com/package/tough-cookie). If you want to use tough-cookie's utilities and classes yourself, you can use the `jsdom.toughCookie` module export to get access to the tough-cookie module instance packaged with jsdom.
 
 ### Intervening before parsing
 
 jsdom allows you to intervene in the creation of a jsdom very early: after the `Window` and `Document` objects are created, but before any HTML is parsed to populate the document with nodes:
 
 ```js
-const dom = jsdom(`<p>Hello</p>`, {
+const dom = new JSDOM(`<p>Hello</p>`, {
   beforeParse(window) {
     window.document.childNodes.length === 0;
     window.someCoolAPI = () => { /* ... */ };
@@ -169,7 +168,7 @@ This is especially useful if you are wanting to modify the environment in some w
 
 ## `JSDOM` object API
 
-Once you have called the `jsdom()` function, you'll get back a `JSDOM` object with the following capabilities.
+Once you have constructed a `JSDOM` object, it will have the following useful capabilities:
 
 ### Properties
 
@@ -182,7 +181,7 @@ The properties `virtualConsole` and `cookieJar` reflect the options you pass in,
 The `serialize()` method will return the [HTML serialization](https://html.spec.whatwg.org/#html-fragment-serialisation-algorithm) of the document, including the doctype:
 
 ```js
-const dom = jsdom(`<!DOCTYPE html>hello`);
+const dom = new JSDOM(`<!DOCTYPE html>hello`);
 
 dom.serialize() === "<!DOCTYPE html><html><head></head><body>hello</body></html>";
 
@@ -195,7 +194,7 @@ dom.window.document.documentElement.outerHTML === "<html><head></head><body>hell
 The `nodeLocation` method will find where a DOM node is within the source document, returning the [parse5 location info](https://www.npmjs.com/package/parse5#options-locationinfo) for the node:
 
 ```js
-const dom = jsdom(
+const dom = new JSDOM(
   `<p>Hello
     <img src="foo.jpg">
   </p>`,
@@ -225,7 +224,7 @@ Similarly, at present jsdom does not handle navigation (such as setting `window.
 However, if you're acting from outside the window, e.g. in some test framework that creates jsdoms, you can override both of these using the special `reconfigure()` method:
 
 ```js
-const dom = jsdom();
+const dom = new JSDOM();
 
 dom.window.top === dom.window;
 dom.window.location.href === "about:blank";
@@ -246,7 +245,7 @@ The New API is definitely not considered finished. In addition to responding to 
 - A new custom resource loader loader infrastructure and the ability to enable external resource loads. Tenative plan:
 
   ```js
-  const dom = jsdom(``, {
+  const dom = new JSDOM(``, {
     resources: {
       allowed: ["script#foo", "iframe", `link[rel="stylesheet"]`] // selector-based filtering. But what about XHR??
       fetch({ url, cookie, referrer, defaultFetch }) {
@@ -255,13 +254,13 @@ The New API is definitely not considered finished. In addition to responding to 
     }
   });
   ```
-- Promise-returning convenience methods, `jsdom.fromFile(filename, options)` and `jsdom.fromURL(url, options)` which will do the appropriate file-reading and fetching for you.
-  - `jsdom.fromURL()` will likely not support much customization (such as the current `headers` option). Instead, you'll be urged to make your own requests and use `jsdom()`.
+- Promise-returning convenience methods, `JSDOM.fromFile(filename, options)` and `JSDOM.fromURL(url, options)` which will do the appropriate file-reading and fetching for you.
+  - `JSDOM.fromURL()` will likely not support much customization (such as the current `headers` option). Instead, you'll be urged to make your own requests and use `new JSDOM()`.
 - Fetching configuration, for parity with the current `pool`, `agent`, `agentClass`, `agentOptions`, `strictSSL`, and `proxy` options.
 - Miscellaneous options, such as `concurrentNodeIterators`.
 - Accept `Buffer`s, typed arrays, and DataViews, along with an `encoding` option, to allow decoding binary data and setting the document's encoding. `encoding` is optional; if not present we default to scanning the bytes for a meta charset. (Strings-as-input stay utf-8 as the charset.)
 - Speculative additional API ideas:
   - A `dom.loaded` promise that is fulfilled alongside the window's `"load"` event
-  - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``jsdom(`<template>${html}</template>`, options).window.document.body.firstChild.content``.)
+  - `jsdom.fragment(html, options)` which returns a `DocumentFragment` resulting from parsing the HTML. (It is essentially equivalent to ``(new JSDOM(`<template>${html}</template>`, options)).window.document.body.firstChild.content``.)
   - `jsdom.jQuery(html, options)` which gives you back a `$` function for operating on the resulting DOM, similar to Cheerio.
   - `dom.insertScriptFromURL(url)` and `dom.insertScriptFromFile(filename)` (promise-returning)

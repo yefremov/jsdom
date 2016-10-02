@@ -5,35 +5,36 @@ const describe = require("mocha-sugar-free").describe;
 const it = require("mocha-sugar-free").it;
 
 const jsdom = require("../../lib/newapi1.js");
+const { JSDOM } = require("../../lib/newapi1.js");
 const { version: packageVersion } = require("../../package.json");
 
 require("chai").use(require("../chai-helpers.js"));
 
-describe("newapi1: jsdom.fromURL", () => {
+describe("newapi1: JSDOM.fromURL", () => {
   it("should return a rejected promise for a bad URL", () => {
     return Promise.all([
-      assert.isRejected(jsdom.fromURL("asdf"), TypeError),
-      assert.isRejected(jsdom.fromURL(undefined), TypeError),
-      assert.isRejected(jsdom.fromURL("fail.com"), TypeError)
+      assert.isRejected(JSDOM.fromURL("asdf"), TypeError),
+      assert.isRejected(JSDOM.fromURL(undefined), TypeError),
+      assert.isRejected(JSDOM.fromURL("fail.com"), TypeError)
     ]);
   });
 
   it("should return a rejected promise for a 404", () => {
     const url = simpleServer(404);
 
-    return assert.isRejected(jsdom.fromURL(url));
+    return assert.isRejected(JSDOM.fromURL(url));
   });
 
   it("should return a rejected promise for a 500", () => {
     const url = simpleServer(500);
 
-    return assert.isRejected(jsdom.fromURL(url));
+    return assert.isRejected(JSDOM.fromURL(url));
   });
 
   it("should use the body of 200 responses", () => {
     const url = simpleServer(200, { "Content-Type": "text/html" }, "<p>Hello</p>");
 
-    return jsdom.fromURL(url).then(dom => {
+    return JSDOM.fromURL(url).then(dom => {
       assert.strictEqual(dom.serialize(), "<html><head></head><body><p>Hello</p></body></html>");
     });
   });
@@ -41,7 +42,7 @@ describe("newapi1: jsdom.fromURL", () => {
   it("should use the body of 301 responses", () => {
     const [requestURL] = redirectServer("<p>Hello</p>", { "Content-Type": "text/html" });
 
-    return jsdom.fromURL(requestURL).then(dom => {
+    return JSDOM.fromURL(requestURL).then(dom => {
       assert.strictEqual(dom.serialize(), "<html><head></head><body><p>Hello</p></body></html>");
     });
   });
@@ -56,7 +57,7 @@ describe("newapi1: jsdom.fromURL", () => {
         recordedHeader = req.headers["user-agent"];
       });
 
-      return jsdom.fromURL(url).then(dom => {
+      return JSDOM.fromURL(url).then(dom => {
         assert.strictEqual(recordedHeader, expected);
         assert.strictEqual(dom.window.navigator.userAgent, expected);
       });
@@ -68,7 +69,7 @@ describe("newapi1: jsdom.fromURL", () => {
         recordedHeader = req.headers["user-agent"];
       });
 
-      return jsdom.fromURL(url, { userAgent: "the user agent" }).then(dom => {
+      return JSDOM.fromURL(url, { userAgent: "the user agent" }).then(dom => {
         assert.strictEqual(recordedHeader, "the user agent");
         assert.strictEqual(dom.window.navigator.userAgent, "the user agent");
       });
@@ -77,7 +78,7 @@ describe("newapi1: jsdom.fromURL", () => {
 
   describe("referrer", () => {
     it("should reject when passing an invalid absolute URL for referrer", () => {
-      assert.isRejected(jsdom.fromURL("http://example.com/", { referrer: "asdf" }), TypeError);
+      assert.isRejected(JSDOM.fromURL("http://example.com/", { referrer: "asdf" }), TypeError);
     });
 
     it("should not send a Referer header when no referrer option is given", () => {
@@ -86,7 +87,7 @@ describe("newapi1: jsdom.fromURL", () => {
         hasHeader = "referer" in req.headers;
       });
 
-      return jsdom.fromURL(url).then(dom => {
+      return JSDOM.fromURL(url).then(dom => {
         assert.strictEqual(hasHeader, false);
         assert.strictEqual(dom.window.document.referrer, "");
       });
@@ -98,7 +99,7 @@ describe("newapi1: jsdom.fromURL", () => {
         recordedHeader = req.headers["referer"];
       });
 
-      return jsdom.fromURL(url, { referrer: "http://example.com/" }).then(dom => {
+      return JSDOM.fromURL(url, { referrer: "http://example.com/" }).then(dom => {
         assert.strictEqual(recordedHeader, "http://example.com/");
         assert.strictEqual(dom.window.document.referrer, "http://example.com/");
       });
@@ -110,7 +111,7 @@ describe("newapi1: jsdom.fromURL", () => {
         recordedHeader = req.headers["referer"];
       });
 
-      return jsdom.fromURL(url, { referrer: "http:example.com" }).then(dom => {
+      return JSDOM.fromURL(url, { referrer: "http:example.com" }).then(dom => {
         assert.strictEqual(recordedHeader, "http://example.com/");
         assert.strictEqual(dom.window.document.referrer, "http://example.com/");
       });
@@ -122,7 +123,7 @@ describe("newapi1: jsdom.fromURL", () => {
       it("should use the URL fetched for a 200", () => {
         const url = simpleServer(200, { "Content-Type": "text/html" });
 
-        return jsdom.fromURL(url).then(dom => {
+        return JSDOM.fromURL(url).then(dom => {
           assert.strictEqual(dom.window.document.URL, url);
         });
       });
@@ -130,13 +131,13 @@ describe("newapi1: jsdom.fromURL", () => {
       it("should use the ultimate response URL after a redirect", () => {
         const [requestURL, responseURL] = redirectServer("<p>Hello</p>", { "Content-Type": "text/html" });
 
-        return jsdom.fromURL(requestURL).then(dom => {
+        return JSDOM.fromURL(requestURL).then(dom => {
           assert.strictEqual(dom.window.document.URL, responseURL);
         });
       });
 
       it("should disallow passing a URL manually", () => {
-        return assert.isRejected(jsdom.fromURL("http://example.com/", { url: "https://example.org" }), TypeError);
+        return assert.isRejected(JSDOM.fromURL("http://example.com/", { url: "https://example.org" }), TypeError);
       });
     });
 
@@ -144,7 +145,7 @@ describe("newapi1: jsdom.fromURL", () => {
       it("should use the content type fetched for a 200", () => {
         const url = simpleServer(200, { "Content-Type": "application/xml" });
 
-        return jsdom.fromURL(url).then(dom => {
+        return JSDOM.fromURL(url).then(dom => {
           assert.strictEqual(dom.window.document.contentType, "application/xml");
         });
       });
@@ -156,13 +157,13 @@ describe("newapi1: jsdom.fromURL", () => {
           { "Content-Type": "application/xml" }
         );
 
-        return jsdom.fromURL(requestURL).then(dom => {
+        return JSDOM.fromURL(requestURL).then(dom => {
           assert.strictEqual(dom.window.document.contentType, "application/xml");
         });
       });
 
       it("should disallow passing a content type manually", () => {
-        return assert.isRejected(jsdom.fromURL("http://example.com/", { contentType: "application/xml" }), TypeError);
+        return assert.isRejected(JSDOM.fromURL("http://example.com/", { contentType: "application/xml" }), TypeError);
       });
     });
   });
@@ -177,7 +178,7 @@ describe("newapi1: jsdom.fromURL", () => {
       const cookieJar = new jsdom.CookieJar();
       cookieJar.setCookieSync("foo=bar", url);
 
-      return jsdom.fromURL(url, { cookieJar }).then(dom => {
+      return JSDOM.fromURL(url, { cookieJar }).then(dom => {
         assert.strictEqual(recordedHeader, "foo=bar");
         assert.strictEqual(dom.window.document.cookie, "foo=bar");
       });
@@ -188,7 +189,7 @@ describe("newapi1: jsdom.fromURL", () => {
 
       const cookieJar = new jsdom.CookieJar();
 
-      return jsdom.fromURL(url, { cookieJar }).then(dom => {
+      return JSDOM.fromURL(url, { cookieJar }).then(dom => {
         assert.strictEqual(cookieJar.getCookieStringSync(url), "bar=baz");
         assert.strictEqual(dom.window.document.cookie, "bar=baz");
       });
@@ -197,7 +198,7 @@ describe("newapi1: jsdom.fromURL", () => {
     it("should store cookies set by the server in a newly-created cookie jar", () => {
       const url = simpleServer(200, { "Set-Cookie": "baz=qux", "Content-Type": "text/html" });
 
-      return jsdom.fromURL(url).then(dom => {
+      return JSDOM.fromURL(url).then(dom => {
         assert.strictEqual(dom.cookieJar.getCookieStringSync(url), "baz=qux");
         assert.strictEqual(dom.window.document.cookie, "baz=qux");
       });
