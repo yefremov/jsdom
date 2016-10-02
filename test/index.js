@@ -3,6 +3,7 @@
 require("./newapi1/basics.js");
 require("./newapi1/methods.js");
 require("./newapi1/options.js");
+require("./newapi1/from-url.js");
 
 require("./jsdom/encoding.js");
 require("./jsdom/env.js");

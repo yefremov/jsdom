@@ -1,4 +1,5 @@
 "use strict";
+const http = require("http");
 const assert = require("chai").assert;
 const describe = require("mocha-sugar-free").describe;
 const it = require("mocha-sugar-free").it;
@@ -37,9 +38,9 @@ describe("newapi1: jsdom.fromURL", () => {
   });
 
   it("should use the body of 301 responses", () => {
-    const [requestURL] = redirectServer("<p>Hello</p>");
+    const [requestURL] = redirectServer("<p>Hello</p>", { "Content-Type": "text/html" });
 
-    return jsdom.fromURL(url).then(dom => {
+    return jsdom.fromURL(requestURL).then(dom => {
       assert.strictEqual(dom.serialize(), "<html><head></head><body><p>Hello</p></body></html>");
     });
   });
@@ -55,11 +56,41 @@ describe("newapi1: jsdom.fromURL", () => {
       });
 
       it("should use the ultimate response URL after a redirect", () => {
-        const [requestURL, responseURL] = redirectServer("<p>Hello</p>");
+        const [requestURL, responseURL] = redirectServer("<p>Hello</p>", { "Content-Type": "text/html" });
 
         return jsdom.fromURL(requestURL).then(dom => {
           assert.strictEqual(dom.window.document.URL, responseURL);
         });
+      });
+
+      it("should disallow passing a URL manually", () => {
+        return assert.isRejected(jsdom.fromURL("http://example.com/", { url: "https://example.org" }), TypeError);
+      });
+    });
+
+    describe("contentType", () => {
+      it("should use the content type fetched for a 200", () => {
+        const url = simpleServer(200, { "Content-Type": "application/xml" });
+
+        return jsdom.fromURL(url).then(dom => {
+          assert.strictEqual(dom.window.document.contentType, "application/xml");
+        });
+      });
+
+      it("should use the ultimate response content type after a redirect", () => {
+        const [requestURL] = redirectServer(
+          "<p>Hello</p>",
+          { "Content-Type": "text/html" },
+          { "Content-Type": "application/xml" }
+        );
+
+        return jsdom.fromURL(requestURL).then(dom => {
+          assert.strictEqual(dom.window.document.contentType, "application/xml");
+        });
+      });
+
+      it("should disallow passing a content type manually", () => {
+        return assert.isRejected(jsdom.fromURL("http://example.com/", { contentType: "application/xml" }), TypeError);
       });
     });
   });
@@ -75,13 +106,13 @@ function simpleServer(responseCode, headers, body) {
   return `http://127.0.0.1:${server.address().port}/`;
 }
 
-function redirectServer(body) {
+function redirectServer(body, extraInitialResponseHeaders, ultimateResponseHeaders) {
   const server = http.createServer((req, res) => {
     if (req.url.endsWith("/1")) {
-      res.writeHead(301, { "Location": "/2" });
+      res.writeHead(301, Object.assign({ "Location": "/2" }, extraInitialResponseHeaders));
       res.end();
     } else if (req.url.endsWith("/2")) {
-      res.writeHead(200, { "Content-Type": "text/html" });
+      res.writeHead(200, ultimateResponseHeaders);
       res.end(body);
       server.close();
     } else {
