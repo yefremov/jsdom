@@ -24,10 +24,10 @@ describe("newapi1 options", () => {
       assert.strictEqual(document.referrer, "http://example.com/");
     });
 
-    it("should have a default referrer URL of about:blank", () => {
+    it("should have a default referrer URL of the empty string", () => {
       const document = jsdom().window.document;
 
-      assert.strictEqual(document.referrer, "about:blank");
+      assert.strictEqual(document.referrer, "");
     });
   });
 

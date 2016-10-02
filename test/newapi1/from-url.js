@@ -5,6 +5,7 @@ const describe = require("mocha-sugar-free").describe;
 const it = require("mocha-sugar-free").it;
 
 const jsdom = require("../../lib/newapi1.js");
+const { version: packageVersion } = require("../../package.json");
 
 require("chai").use(require("../chai-helpers.js"));
 
@@ -42,6 +43,77 @@ describe("newapi1: jsdom.fromURL", () => {
 
     return jsdom.fromURL(requestURL).then(dom => {
       assert.strictEqual(dom.serialize(), "<html><head></head><body><p>Hello</p></body></html>");
+    });
+  });
+
+  describe("user agent", () => {
+    it("should use the default user agent as the User-Agent header when none is given", () => {
+      const expected = `Mozilla/5.0 (${process.platform}) AppleWebKit/537.36 ` +
+                       `(KHTML, like Gecko) jsdom/${packageVersion}`;
+
+      let recordedHeader;
+      const url = requestRecordingServer(req => {
+        recordedHeader = req.headers["user-agent"];
+      });
+
+      return jsdom.fromURL(url).then(dom => {
+        assert.strictEqual(recordedHeader, expected);
+        assert.strictEqual(dom.window.navigator.userAgent, expected);
+      });
+    });
+
+    it("should use the supplied userAgent option as a User-Agent header", () => {
+      let recordedHeader;
+      const url = requestRecordingServer(req => {
+        recordedHeader = req.headers["user-agent"];
+      });
+
+      return jsdom.fromURL(url, { userAgent: "the user agent" }).then(dom => {
+        assert.strictEqual(recordedHeader, "the user agent");
+        assert.strictEqual(dom.window.navigator.userAgent, "the user agent");
+      });
+    });
+  });
+
+  describe("referrer", () => {
+    it("should reject when passing an invalid absolute URL for referrer", () => {
+      assert.isRejected(jsdom.fromURL("http://example.com/", { referrer: "asdf" }), TypeError);
+    });
+
+    it("should not send a Referer header when no referrer option is given", () => {
+      let hasHeader;
+      const url = requestRecordingServer(req => {
+        hasHeader = "referer" in req.headers;
+      });
+
+      return jsdom.fromURL(url).then(dom => {
+        assert.strictEqual(hasHeader, false);
+        assert.strictEqual(dom.window.document.referrer, "");
+      });
+    });
+
+    it("should use the supplied referrer option as a Referer header", () => {
+      let recordedHeader;
+      const url = requestRecordingServer(req => {
+        recordedHeader = req.headers["referer"];
+      });
+
+      return jsdom.fromURL(url, { referrer: "http://example.com/" }).then(dom => {
+        assert.strictEqual(recordedHeader, "http://example.com/");
+        assert.strictEqual(dom.window.document.referrer, "http://example.com/");
+      });
+    });
+
+    it("should canonicalize referrer URLs before using them as a Referer header", () => {
+      let recordedHeader;
+      const url = requestRecordingServer(req => {
+        recordedHeader = req.headers["referer"];
+      });
+
+      return jsdom.fromURL(url, { referrer: "http:example.com" }).then(dom => {
+        assert.strictEqual(recordedHeader, "http://example.com/");
+        assert.strictEqual(dom.window.document.referrer, "http://example.com/");
+      });
     });
   });
 
@@ -94,12 +166,38 @@ describe("newapi1: jsdom.fromURL", () => {
       });
     });
   });
+
+  describe.skip("cookie jar integration", () => {
+    it("should send applicable cookies in a supplied cookie jar", () => {
+
+    });
+
+    it("should store cookies set by the server in a supplied cookie jar", () => {
+
+    });
+
+    it("should store cookies set by the server in a newly-created cookie jar", () => {
+
+    });
+  });
 });
 
 function simpleServer(responseCode, headers, body) {
   const server = http.createServer((req, res) => {
     res.writeHead(responseCode, headers);
     res.end(body);
+    server.close();
+  }).listen();
+
+  return `http://127.0.0.1:${server.address().port}/`;
+}
+
+function requestRecordingServer(recorder) {
+  const server = http.createServer((req, res) => {
+    recorder(req);
+
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end("<p>Hello</p>");
     server.close();
   }).listen();
 

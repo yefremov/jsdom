@@ -48,7 +48,7 @@ const dom = jsdom(``, {
 ```
 
 - `url` sets the value returned by `window.location`, `document.URL`, and `document.documentURI`, and affects things like resolution of relative URLs within the document and the same-origin restrictions and referrer used while fetching external resources. It defaults to `"about:blank"`.
-- `referrer` just affects the value read from `document.referrer`. It defaults to `"about:blank"`.
+- `referrer` just affects the value read from `document.referrer`. It defaults to no referrer (which reflects as the empty string).
 - `contentType` affects the value read from `document.contentType`, and how the document is parsed: as HTML or as XML. Values that are not `"text/html"` or an [XML mime type](https://html.spec.whatwg.org/multipage/infrastructure.html#xml-mime-type) will throw. It defaults to `"text/html"`.
 - `userAgent` affects the value read from `navigator.userAgent`, as well as the `User-Agent` header sent while fetching external resources. It defaults to <code>\`Mozilla/5.0 (${process.platform}) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/${jsdomVersion}\`</code>.
 - `includeNodeLocations` preserves the location info produced by the HTML parser, allowing you to retrieve it with the `nodeLocation()` method (described below). It defaults to `false` to give the best performance, and cannot be used with an XML content type since our XML parser does not support location info.
