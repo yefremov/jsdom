@@ -167,17 +167,40 @@ describe("newapi1: jsdom.fromURL", () => {
     });
   });
 
-  describe.skip("cookie jar integration", () => {
+  describe("cookie jar integration", () => {
     it("should send applicable cookies in a supplied cookie jar", () => {
+      let recordedHeader;
+      const url = requestRecordingServer(req => {
+        recordedHeader = req.headers["cookie"];
+      });
 
+      const cookieJar = new jsdom.CookieJar();
+      cookieJar.setCookieSync("foo=bar", url);
+
+      return jsdom.fromURL(url, { cookieJar }).then(dom => {
+        assert.strictEqual(recordedHeader, "foo=bar");
+        assert.strictEqual(dom.window.document.cookie, "foo=bar");
+      });
     });
 
     it("should store cookies set by the server in a supplied cookie jar", () => {
+      const url = simpleServer(200, { "Set-Cookie": "bar=baz", "Content-Type": "text/html" });
 
+      const cookieJar = new jsdom.CookieJar();
+
+      return jsdom.fromURL(url, { cookieJar }).then(dom => {
+        assert.strictEqual(cookieJar.getCookieStringSync(url), "bar=baz");
+        assert.strictEqual(dom.window.document.cookie, "bar=baz");
+      });
     });
 
     it("should store cookies set by the server in a newly-created cookie jar", () => {
+      const url = simpleServer(200, { "Set-Cookie": "baz=qux", "Content-Type": "text/html" });
 
+      return jsdom.fromURL(url).then(dom => {
+        assert.strictEqual(dom.cookieJar.getCookieStringSync(url), "baz=qux");
+        assert.strictEqual(dom.window.document.cookie, "baz=qux");
+      });
     });
   });
 });
