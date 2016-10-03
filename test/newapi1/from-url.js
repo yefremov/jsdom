@@ -116,6 +116,14 @@ describe("newapi1: JSDOM.fromURL", () => {
         assert.strictEqual(dom.window.document.referrer, "http://example.com/");
       });
     });
+
+    it("should use the redirect source URL as the referrer, overriding a provided one", () => {
+      const [requestURL] = redirectServer("<p>Hello</p>", { "Content-Type": "text/html" });
+
+      return JSDOM.fromURL(requestURL, { referrer: "http://example.com/" }).then(dom => {
+        assert.strictEqual(dom.window.document.referrer, requestURL);
+      });
+    });
   });
 
   describe("inferring options from the response", () => {
