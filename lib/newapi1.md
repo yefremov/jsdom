@@ -237,6 +237,28 @@ dom.window.location.href === "https://example.com/";
 
 Note that changing the jsdom's URL will impact all APIs that return the current document URL, such as `window.location`, `document.URL`, and `document.documentURI`, as well as resolution of relative URLs within the document, and the same-origin checks and referrer used while fetching external resources.
 
+## Convenience API: a new jsdom from a URL
+
+In addition to the `JSDOM` constructor itself, jsdom provides a promise-returning factory method for constructing a jsdom from a URL:
+
+```js
+JSDOM.fromURL("https://example.com/", options).then(dom => {
+  console.log(dom.serialize());
+});
+```
+
+The returned promise will fulfill with a `JSDOM` instance if the URL is valid and the request is successful. Any redirects will be followed to their ultimate destination.
+
+The options provided to `fromURL` are similar to those provided to the `JSDOM` constructor, with the following additional restrictions and consequences:
+
+- The `url` and `contentType` options cannot be provided.
+- The `referrer` option is used as the HTTP `Referer` request header of the initial request.
+- The `userAgent` option is used as the HTTP `User-Agent` request header of any requests.
+- The resulting jsdom's URL, content type, and referrer are determined from the response (including after following redirects).
+- Any cookies set via HTTP `Set-Cookie` response headers are stored in the jsdom's cookie jar. Similarly, any cookies already in a supplied cookie jar are sent as HTTP `Cookie` request headers.
+
+Note how the initial request is not infinitely customizable; `JSDOM.fromURL` is meant to be a convenience API for the majority of cases. If you need greater control over the initial request, you should perform it yourself, and then use the `JSDOM` constructor manually.
+
 ## Future new API work
 
 The New API is definitely not considered finished. In addition to responding to feedback based on your experience, we plan on adding the following functionality:
@@ -254,8 +276,7 @@ The New API is definitely not considered finished. In addition to responding to 
     }
   });
   ```
-- Promise-returning convenience methods, `JSDOM.fromFile(filename, options)` and `JSDOM.fromURL(url, options)` which will do the appropriate file-reading and fetching for you.
-  - `JSDOM.fromURL()` will likely not support much customization (such as the current `headers` option). Instead, you'll be urged to make your own requests and use `new JSDOM()`.
+- Another promise-returning convenience method, `JSDOM.fromFile(filename, options)`.
 - Fetching configuration, for parity with the current `pool`, `agent`, `agentClass`, `agentOptions`, `strictSSL`, and `proxy` options.
 - Miscellaneous options, such as `concurrentNodeIterators`.
 - Accept `Buffer`s, typed arrays, and DataViews, along with an `encoding` option, to allow decoding binary data and setting the document's encoding. `encoding` is optional; if not present we default to scanning the bytes for a meta charset. (Strings-as-input stay utf-8 as the charset.)
