@@ -254,7 +254,7 @@ The options provided to `fromURL` are similar to those provided to the `JSDOM` c
 - The `url` and `contentType` options cannot be provided.
 - The `referrer` option is used as the HTTP `Referer` request header of the initial request.
 - The `userAgent` option is used as the HTTP `User-Agent` request header of any requests.
-- The resulting jsdom's URL, content type, and referrer are determined from the response (including after following redirects).
+- The resulting jsdom's URL, content type, and referrer are determined from the response.
 - Any cookies set via HTTP `Set-Cookie` response headers are stored in the jsdom's cookie jar. Similarly, any cookies already in a supplied cookie jar are sent as HTTP `Cookie` request headers.
 
 Note how the initial request is not infinitely customizable; `JSDOM.fromURL` is meant to be a convenience API for the majority of cases. If you need greater control over the initial request, you should perform it yourself, and then use the `JSDOM` constructor manually.
