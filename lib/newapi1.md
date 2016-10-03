@@ -166,6 +166,50 @@ const dom = new JSDOM(`<p>Hello</p>`, {
 
 This is especially useful if you are wanting to modify the environment in some way, for example adding shims for web platform APIs jsdom does not support.
 
+### Request options
+
+TODO ACTUALLY IMPLEMENT THIS. Strategy:
+- Notice that the existing resource loader's download() has a lot more than we currently have in fromURL.
+- Notice however that its options structure is terrible (e.g. not separating requestOptions from fetch options).
+- Notice also that we probably want to expose to the rest of the jsdom infrastructure fetch() (which handles data URLs), not download().
+- Figure out how to write fromURL tests for as much of the missing functionality as possible:
+  + Pass-through to request: how?
+  + gzip?
+  + encoding!
+  + Accept-Language (but maybe use browsers en-US fallback instead?)
+  + Probably omit defaultEncoding (hard-code that to current behavior when undefined)
+- Create the start of a new resource loader which exposes fetch() with appropriate options. Can be internal for now, but ideas:
+  + new ResourceLoader(requestOptions)
+  + resourceLoader.fetch(url, { headers /* accept and referrer can go here */ }) -> `Promise<string>` with an abort() method tacked on.
+- Then we can use that to implement this. Maybe the API shape changes to be ``new JSDOM(``, { resourceLoader })`` instead, and you override fetch behavior by subclassing!! I like this.
+
+Under the hood, jsdom uses the [request](https://www.npmjs.com/package/request) package to perform its fetches. You can customize all the fetches performed in jsdom by providing a series of options that jsdom will pass through to request:
+
+```js
+const dom = new JSDOM(``, {
+  requestOptions: {
+    proxy,
+    strictSSL,
+    pool, agent, agentClass, agentOptions
+  }
+});
+```
+
+The default options jsdom uses to best emulate browser behavior are:
+
+```js
+{
+  strictSSL: true,
+  pool: {
+    maxSockets: 6
+  },
+  agentOptions: {
+    keepAlive: true,
+    keepAliveMsecs: 115 * 1000
+  }
+}
+```
+
 ## `JSDOM` object API
 
 Once you have constructed a `JSDOM` object, it will have the following useful capabilities:
