@@ -175,7 +175,6 @@ TODO ACTUALLY IMPLEMENT THIS. Strategy:
 - Figure out how to write fromURL tests for as much of the missing functionality as possible:
   + Pass-through to request: how?
   + encoding!
-  + Accept-Language (but maybe use browsers en-US fallback instead?)
   + Probably omit defaultEncoding (hard-code that to current behavior when undefined)
 - Create the start of a new resource loader which exposes fetch() with appropriate options. Can be internal for now, but ideas:
   + new ResourceLoader(requestOptions)

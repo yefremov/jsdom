@@ -69,6 +69,17 @@ describe("newapi1: JSDOM.fromURL", () => {
     });
   });
 
+  it("should send an Accept-Language: en header", () => {
+    let recordedHeader;
+    const url = requestRecordingServer(req => {
+      recordedHeader = req.headers["accept-language"];
+    });
+
+    return JSDOM.fromURL(url).then(() => {
+      assert.strictEqual(recordedHeader, "en");
+    });
+  });
+
   describe("user agent", () => {
     it("should use the default user agent as the User-Agent header when none is given", () => {
       const expected = `Mozilla/5.0 (${process.platform}) AppleWebKit/537.36 ` +
