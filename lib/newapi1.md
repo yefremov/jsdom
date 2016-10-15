@@ -174,7 +174,6 @@ TODO ACTUALLY IMPLEMENT THIS. Strategy:
 - Notice also that we probably want to expose to the rest of the jsdom infrastructure fetch() (which handles data URLs), not download().
 - Figure out how to write fromURL tests for as much of the missing functionality as possible:
   + Pass-through to request: how?
-  + gzip?
   + encoding!
   + Accept-Language (but maybe use browsers en-US fallback instead?)
   + Probably omit defaultEncoding (hard-code that to current behavior when undefined)

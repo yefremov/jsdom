@@ -1,5 +1,6 @@
 "use strict";
 const http = require("http");
+const zlib = require("zlib");
 const assert = require("chai").assert;
 const describe = require("mocha-sugar-free").describe;
 const it = require("mocha-sugar-free").it;
@@ -44,6 +45,16 @@ describe("newapi1: JSDOM.fromURL", () => {
 
     return JSDOM.fromURL(requestURL).then(dom => {
       assert.strictEqual(dom.serialize(), "<html><head></head><body><p>Hello</p></body></html>");
+    });
+  });
+
+  it("should be able to handle gzipped bodies", () => {
+    const body = zlib.gzipSync("<p>Hello world!</p>");
+    const headers = { "Content-Type": "text/html", "Content-Length": body.byteLength, "Content-Encoding": "gzip" };
+    const url = simpleServer(200, headers, body);
+
+    return JSDOM.fromURL(url).then(dom => {
+      assert.strictEqual(dom.serialize(), "<html><head></head><body><p>Hello world!</p></body></html>");
     });
   });
 
