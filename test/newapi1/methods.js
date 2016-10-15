@@ -95,7 +95,7 @@ describe("newapi1 methods", () => {
         assert.strictEqual(dom.window.topResult, "top");
       });
 
-      specify("Passing no top option does nothing", () => {
+      it("should do nothing when no options are passed", () => {
         const dom = new JSDOM();
 
         dom.reconfigure({ });
@@ -103,7 +103,7 @@ describe("newapi1 methods", () => {
         assert.strictEqual(dom.window.top, dom.window);
       });
 
-      specify("Passing undefined for top does change it to undefined", () => {
+      it("should change window.top to undefined if passing undefined", () => {
         const dom = new JSDOM();
 
         dom.reconfigure({ windowTop: undefined });
@@ -120,7 +120,7 @@ describe("newapi1 methods", () => {
         assert.strictEqual(window.document.URL, "http://example.com/");
 
         function testPass(urlString, expected = urlString) {
-          dom.reconfigure({ url: urlString } );
+          dom.reconfigure({ url: urlString });
 
           assert.strictEqual(window.location.href, expected);
           assert.strictEqual(window.document.URL, expected);

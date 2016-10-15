@@ -181,7 +181,7 @@ TODO ACTUALLY IMPLEMENT THIS. Strategy:
 - Create the start of a new resource loader which exposes fetch() with appropriate options. Can be internal for now, but ideas:
   + new ResourceLoader(requestOptions)
   + resourceLoader.fetch(url, { headers /* accept and referrer can go here */ }) -> `Promise<string>` with an abort() method tacked on.
-- Then we can use that to implement this. Maybe the API shape changes to be ``new JSDOM(``, { resourceLoader })`` instead, and you override fetch behavior by subclassing!! I like this.
+- Then we can use that to implement this. Maybe the API shape changes to be ```new JSDOM(``, { resourceLoader })``` instead, and you override fetch behavior by subclassing!! I like this.
 
 Under the hood, jsdom uses the [request](https://www.npmjs.com/package/request) package to perform its fetches. You can customize all the fetches performed in jsdom by providing a series of options that jsdom will pass through to request:
 

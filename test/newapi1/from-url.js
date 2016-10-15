@@ -50,10 +50,10 @@ describe("newapi1: JSDOM.fromURL", () => {
   it("should send a HTML-preferring Accept header", () => {
     let recordedHeader;
     const url = requestRecordingServer(req => {
-      recordedHeader = req.headers["accept"];
+      recordedHeader = req.headers.accept;
     });
 
-    return JSDOM.fromURL(url).then(dom => {
+    return JSDOM.fromURL(url).then(() => {
       assert.strictEqual(recordedHeader, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
     });
   });
@@ -107,7 +107,7 @@ describe("newapi1: JSDOM.fromURL", () => {
     it("should use the supplied referrer option as a Referer header", () => {
       let recordedHeader;
       const url = requestRecordingServer(req => {
-        recordedHeader = req.headers["referer"];
+        recordedHeader = req.headers.referer;
       });
 
       return JSDOM.fromURL(url, { referrer: "http://example.com/" }).then(dom => {
@@ -119,7 +119,7 @@ describe("newapi1: JSDOM.fromURL", () => {
     it("should canonicalize referrer URLs before using them as a Referer header", () => {
       let recordedHeader;
       const url = requestRecordingServer(req => {
-        recordedHeader = req.headers["referer"];
+        recordedHeader = req.headers.referer;
       });
 
       return JSDOM.fromURL(url, { referrer: "http:example.com" }).then(dom => {
@@ -191,7 +191,7 @@ describe("newapi1: JSDOM.fromURL", () => {
     it("should send applicable cookies in a supplied cookie jar", () => {
       let recordedHeader;
       const url = requestRecordingServer(req => {
-        recordedHeader = req.headers["cookie"];
+        recordedHeader = req.headers.cookie;
       });
 
       const cookieJar = new jsdom.CookieJar();
@@ -250,7 +250,7 @@ function requestRecordingServer(recorder) {
 function redirectServer(body, extraInitialResponseHeaders, ultimateResponseHeaders) {
   const server = http.createServer((req, res) => {
     if (req.url.endsWith("/1")) {
-      res.writeHead(301, Object.assign({ "Location": "/2" }, extraInitialResponseHeaders));
+      res.writeHead(301, Object.assign({ Location: "/2" }, extraInitialResponseHeaders));
       res.end();
     } else if (req.url.endsWith("/2")) {
       res.writeHead(200, ultimateResponseHeaders);
